@@ -1,0 +1,22 @@
+# React
+frontend/node_modules/
+frontend/dist/
+
+# Spring Boot
+backend/target/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Mac
+.DS_Store
+
+# Logs
+*.log
