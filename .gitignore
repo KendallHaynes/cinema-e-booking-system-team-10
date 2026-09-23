@@ -4,6 +4,7 @@ frontend/dist/
 
 # Spring Boot
 backend/target/
+backend/src/main/resources/application.properties
 
 # Environment variables
 .env
