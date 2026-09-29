@@ -68,9 +68,8 @@ export default function FilterModal() {
           <div className="filter-section">
             <div className="filter-section-header">
               <label className="filter-section-title">Filter by Genre</label>
-              <span className="filter-status-tag active-tag">Live DB Filter</span>
             </div>
-            <p className="filter-hint">Select a genre to filter dynamically from the database.</p>
+            <p className="filter-hint">Select a genre to filter from the database.</p>
             <div className="filter-chip-grid">
               {GENRES.map((genre) => {
                 const isSelected = selectedGenre === genre;
@@ -92,7 +91,6 @@ export default function FilterModal() {
           <div className="filter-section">
             <div className="filter-section-header">
               <label className="filter-section-title">Filter by Show Date</label>
-              <span className="filter-status-tag ui-tag">Date Filter</span>
             </div>
             <p className="filter-hint">
               Select date availability to filter showings.

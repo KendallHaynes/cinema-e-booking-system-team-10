@@ -28,7 +28,6 @@ export default function MovieCarousel({ title, subtitle, movies, icon }) {
       {/* Carousel Header with Title and Scroll Arrows */}
       <div className="carousel-header">
         <div className="carousel-title-group">
-          {icon && <span className="carousel-icon">{icon}</span>}
           <div>
             <h2 className="carousel-title">{title}</h2>
             {subtitle && <p className="carousel-subtitle">{subtitle}</p>}

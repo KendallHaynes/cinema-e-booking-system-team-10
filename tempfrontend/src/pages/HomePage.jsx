@@ -48,7 +48,7 @@ export default function HomePage() {
           <div className="results-header-bar">
             <div>
               <span className="results-badge">
-                {showFavoritesOnly ? '⭐ Saved Favorites' : 'Filtered Results'}
+                {showFavoritesOnly ? 'Saved Favorites' : 'Filtered Results'}
               </span>
               <h1 className="results-title">
                 {showFavoritesOnly
@@ -57,10 +57,7 @@ export default function HomePage() {
                   ? `Search: "${searchQuery}"`
                   : `Genre: ${selectedGenre}`}
               </h1>
-              <p className="results-subtitle">
-                Found {displayMovies.length}{' '}
-                {displayMovies.length === 1 ? 'movie' : 'movies'} matching your selection.
-              </p>
+           
             </div>
             <button
               type="button"
@@ -74,7 +71,6 @@ export default function HomePage() {
           {/* If no movies match criteria */}
           {displayMovies.length === 0 ? (
             <div className="empty-results-card">
-              <div className="empty-icon">🎬</div>
               <h2 className="empty-title">No Movies Found</h2>
               <p className="empty-desc">
                 {showFavoritesOnly
@@ -103,9 +99,8 @@ export default function HomePage() {
           {/* Currently Showing Carousel with Horizontal Scroll Arrows */}
           <MovieCarousel
             title="Currently Showing"
-            subtitle="In Theaters Today • Experience in Laser IMAX & Dolby Atmos"
+            subtitle="In Theaters Today"
             movies={currentlyRunningMovies}
-            icon="🎬"
           />
 
           {/* Coming Soon Carousel with Horizontal Scroll Arrows */}
@@ -113,7 +108,6 @@ export default function HomePage() {
             title="Coming Soon"
             subtitle="Upcoming Releases • Add to your favorites to receive alerts"
             movies={comingSoonMovies}
-            icon="✨"
           />
         </main>
       )}

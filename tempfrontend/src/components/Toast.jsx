@@ -6,9 +6,11 @@ export default function Toast({ toast }) {
 
   return (
     <div className={`ces-toast ${isSuccess ? 'toast-success' : isError ? 'toast-error' : 'toast-info'}`}>
-      <span className="toast-icon">
-        {isSuccess ? '✓' : isError ? '⚠' : 'ℹ'}
-      </span>
+      {!isSuccess && (
+        <span className="toast-icon">
+          {isError ? '⚠' : 'ℹ'}
+        </span>
+      )}
       <span className="toast-text">{toast.message}</span>
     </div>
   );

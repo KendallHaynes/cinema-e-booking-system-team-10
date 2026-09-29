@@ -46,18 +46,8 @@ export default function MovieCard({ movie }) {
         />
         <div className="card-overlay-gradient"></div>
 
-        {/* Status Tag Pill */}
-        <span
-          className={`card-status-pill ${
-            movie.status === 'CURRENTLY_RUNNING' ? 'status-running' : 'status-coming'
-          }`}
-        >
-          {movie.status === 'CURRENTLY_RUNNING' ? 'Showing Now' : 'Coming Soon'}
-        </span>
-
         {/* Quick view hover action button */}
         <div className="card-hover-action">
-          <span className="play-icon-bubble">▶</span>
           <span className="hover-action-text">View Details & Showtimes</span>
         </div>
       </div>
@@ -68,6 +58,14 @@ export default function MovieCard({ movie }) {
         <h3 className="card-movie-title" title={movie.title}>
           {movie.title}
         </h3>
+
+        <span
+          className={`card-status-pill ${
+            movie.status === 'CURRENTLY_RUNNING' ? 'status-running' : 'status-coming'
+          }`}
+        >
+          {movie.status === 'CURRENTLY_RUNNING' ? 'Showing Now' : 'Coming Soon'}
+        </span>
 
         {/* Underneath Movie Title: Rating and Star Favorite */}
         <div className="card-meta-row">

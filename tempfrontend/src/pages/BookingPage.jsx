@@ -69,9 +69,8 @@ export default function BookingPage() {
           </div>
           <h1 className="banner-title">{selectedMovie.title}</h1>
           <div className="banner-showtime-chip">
-            <span className="clock-icon">🕒</span>
             <span className="showtime-text">
-              Selected Showtime: <strong>{selectedShowtime || '5:00 PM'}</strong> (Today) • Auditorium 2
+              Selected Showtime: <strong>{selectedShowtime || '5:00 PM'}</strong> (Today)
             </span>
           </div>
         </div>
@@ -136,16 +135,14 @@ export default function BookingPage() {
               <span className="step-number">2</span>
               <div>
                 <h2 className="step-title">Theater Seating Layout</h2>
-                <p className="step-subtitle">
-                  Auditorium seating layout visualization
-                </p>
+                <p className="step-subtitle">Preview of available seats</p>
               </div>
             </div>
 
             {/* Visual Cinema Screen Arc */}
             <div className="cinema-screen-area">
               <div className="screen-curve"></div>
-              <span className="screen-text">CINEMA SCREEN</span>
+              <span className="screen-text">Front</span>
             </div>
 
             {/* Seating Grid */}
@@ -257,7 +254,7 @@ export default function BookingPage() {
               type="button"
               className="ces-btn btn-primary btn-block btn-checkout"
             >
-              Confirm Reservation
+              Checkout
             </button>
           </div>
         </aside>

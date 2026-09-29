@@ -143,7 +143,7 @@ export function MovieProvider({ children }) {
         showNotification(`Removed "${movieTitle}" from favorites`, 'info');
         return prev.filter((id) => id !== movieId);
       } else {
-        showNotification(`Added "${movieTitle}" to favorites! ⭐`, 'success');
+        showNotification(`Added "${movieTitle}" to favorites`, 'success');
         return [...prev, movieId];
       }
     });

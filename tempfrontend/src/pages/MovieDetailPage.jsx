@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useMovieContext } from '../context/MovieContext';
 
 const HARDCODED_SHOWTIMES = [
-  { time: '2:00 PM', auditorium: 'Screen 1 (Standard 4K)', format: 'Digital' },
-  { time: '5:00 PM', auditorium: 'Screen 2 (Dolby Cinema)', format: 'Dolby Atmos' },
-  { time: '8:00 PM', auditorium: 'Screen 3 (IMAX Laser)', format: 'IMAX' },
-  { time: '10:15 PM', auditorium: 'Screen 1 (Late Night)', format: 'Digital' }
+  '2:00 PM',
+  '5:00 PM',
+  '8:00 PM',
+  '10:15 PM'
 ];
 
 export default function MovieDetailPage() {
@@ -39,9 +39,6 @@ export default function MovieDetailPage() {
           <span>Back to Movies</span>
         </button>
 
-        <span className="detail-status-pill">
-          {isCurrentlyRunning ? 'Now In Theaters' : 'Coming Soon'}
-        </span>
       </div>
 
       {/* TOP SECTION: Movie Title, Rating, Star, Description, Cast */}
@@ -74,6 +71,9 @@ export default function MovieDetailPage() {
           {/* Badges: Rating, Genre, Status */}
           <div className="detail-badges-row">
             <span className="detail-rating-badge">{selectedMovie.rating || 'NR'}</span>
+            <span className="detail-status-label">
+              {isCurrentlyRunning ? 'Now In Theaters' : 'Coming Soon'}
+            </span>
             <span className="detail-genre-pill">{selectedMovie.genre}</span>
             <span className="detail-duration-pill">2h 35m</span>
             <span className="detail-hd-badge">4K Ultra HD</span>
@@ -81,7 +81,7 @@ export default function MovieDetailPage() {
 
           {/* Brief Movie Description */}
           <div className="detail-description-section">
-            <h3 className="section-label">Synopsis</h3>
+            <h3 className="section-label">Description</h3>
             <p className="detail-description-text">{selectedMovie.description}</p>
           </div>
 
@@ -136,7 +136,6 @@ export default function MovieDetailPage() {
       {/* BOTTOM SECTION: Available Showtimes (e.g. 2:00 PM, 5:00 PM, 8:00 PM) */}
       <section className="detail-showtimes-section">
         <div className="section-title-bar">
-          <span className="section-icon">🎟</span>
           <div>
             <h2 className="section-title">Available Showtimes</h2>
             <p className="section-subtitle">
@@ -148,28 +147,24 @@ export default function MovieDetailPage() {
         </div>
 
         <div className="showtimes-grid">
-          {HARDCODED_SHOWTIMES.map((slot) => (
+          {HARDCODED_SHOWTIMES.map((showtime) => (
             <div
-              key={slot.time}
+              key={showtime}
               className="showtime-card"
-              onClick={() => openBooking(selectedMovie, slot.time)}
+              onClick={() => openBooking(selectedMovie, showtime)}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') openBooking(selectedMovie, slot.time);
+                if (e.key === 'Enter') openBooking(selectedMovie, showtime);
               }}
             >
-              <div className="showtime-top">
-                <span className="showtime-format-badge">{slot.format}</span>
-                <span className="showtime-auditorium">{slot.auditorium}</span>
-              </div>
-              <div className="showtime-time">{slot.time}</div>
+              <div className="showtime-time">{showtime}</div>
               <button
                 type="button"
                 className="ces-btn btn-primary btn-sm showtime-book-btn"
                 onClick={(e) => {
                   e.stopPropagation();
-                  openBooking(selectedMovie, slot.time);
+                  openBooking(selectedMovie, showtime);
                 }}
               >
                 Select Seats →

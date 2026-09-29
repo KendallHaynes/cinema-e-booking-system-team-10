@@ -35,11 +35,6 @@ function MainContent() {
               Cinema E-Booking System
             </p>
           </div>
-          <div className="footer-links">
-            <span className="footer-tag">CSCI 4050/6050</span>
-            <span className="footer-tag">Team 10</span>
-            <span className="footer-tag">Spring Boot + React 19 + MySQL</span>
-          </div>
         </div>
       </footer>
     </div>
