@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMovieContext } from '../context/MovieContext';
 
 // Ticket pricing definitions
@@ -18,10 +19,19 @@ export default function BookingPage() {
     openMovieDetail,
     navigateHome
   } = useMovieContext();
+  const [selectedSeats, setSelectedSeats] = useState(DEFAULT_SELECTED);
 
   // Rows A to F, seats 1 to 8
   const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
   const seatNumbers = [1, 2, 3, 4, 5, 6, 7, 8];
+
+  const toggleSeat = (seatId) => {
+    setSelectedSeats((currentSeats) =>
+      currentSeats.includes(seatId)
+        ? currentSeats.filter((currentSeat) => currentSeat !== seatId)
+        : [...currentSeats, seatId]
+    );
+  };
 
   // Static prototype totals per requirement (buttons do not alter totals yet)
   const prototypeSubtotal = 27.0;
@@ -155,7 +165,7 @@ export default function BookingPage() {
                       {seatNumbers.map((num) => {
                         const seatId = `${row}${num}`;
                         const isOccupied = DEFAULT_OCCUPIED.includes(seatId);
-                        const isSelected = DEFAULT_SELECTED.includes(seatId);
+                        const isSelected = selectedSeats.includes(seatId);
 
                         let seatClass = 'seat-btn';
                         if (isOccupied) seatClass += ' seat-occupied';
@@ -168,10 +178,12 @@ export default function BookingPage() {
                             type="button"
                             className={seatClass}
                             disabled={isOccupied}
+                            onClick={() => toggleSeat(seatId)}
                             title={`Seat ${seatId} ${
                               isOccupied ? '(Occupied)' : isSelected ? '(Selected)' : '(Available)'
                             }`}
                             aria-label={`Seat ${seatId}`}
+                            aria-pressed={isSelected}
                           >
                             <span className="seat-code">{seatId}</span>
                           </button>
@@ -238,7 +250,7 @@ export default function BookingPage() {
               <div className="summary-row selected-seats-row">
                 <span>Selected Seats</span>
                 <span className="seats-badge-list">
-                  {DEFAULT_SELECTED.join(', ')}
+                  {selectedSeats.length > 0 ? selectedSeats.join(', ') : 'None'}
                 </span>
               </div>
             </div>

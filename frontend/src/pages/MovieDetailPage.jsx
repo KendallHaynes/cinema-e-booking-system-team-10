@@ -133,46 +133,45 @@ export default function MovieDetailPage() {
         </div>
       </section>
 
-      {/* BOTTOM SECTION: Available Showtimes (e.g. 2:00 PM, 5:00 PM, 8:00 PM) */}
-      <section className="detail-showtimes-section">
-        <div className="section-title-bar">
-          <div>
-            <h2 className="section-title">Available Showtimes</h2>
-            <p className="section-subtitle">
-              {isCurrentlyRunning
-                ? 'Select a showtime to proceed to seat selection & booking'
-                : 'Preview showtimes for early booking'}
-            </p>
+      {isCurrentlyRunning && (
+        <section className="detail-showtimes-section">
+          <div className="section-title-bar">
+            <div>
+              <h2 className="section-title">Available Showtimes</h2>
+              <p className="section-subtitle">
+                Select a showtime to proceed to seat selection & booking
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="showtimes-grid">
-          {HARDCODED_SHOWTIMES.map((showtime) => (
-            <div
-              key={showtime}
-              className="showtime-card"
-              onClick={() => openBooking(selectedMovie, showtime)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') openBooking(selectedMovie, showtime);
-              }}
-            >
-              <div className="showtime-time">{showtime}</div>
-              <button
-                type="button"
-                className="ces-btn btn-primary btn-sm showtime-book-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openBooking(selectedMovie, showtime);
+          <div className="showtimes-grid">
+            {HARDCODED_SHOWTIMES.map((showtime) => (
+              <div
+                key={showtime}
+                className="showtime-card"
+                onClick={() => openBooking(selectedMovie, showtime)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') openBooking(selectedMovie, showtime);
                 }}
               >
-                Select Seats →
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
+                <div className="showtime-time">{showtime}</div>
+                <button
+                  type="button"
+                  className="ces-btn btn-primary btn-sm showtime-book-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openBooking(selectedMovie, showtime);
+                  }}
+                >
+                  Select Seats →
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
