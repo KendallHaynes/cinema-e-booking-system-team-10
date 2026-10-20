@@ -1,9 +1,11 @@
-CREATE DATABASE IF NOT EXISTS cinema_db;
-
-USE cinema_db;
+CREATE DATABASE IF NOT EXISTS cinema_db_schema;
+USE cinema_db_schema;
+-- =========================================
+-- MOVIES
+-- =========================================
 
 CREATE TABLE IF NOT EXISTS movies (
-    movie_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    movie_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     genre VARCHAR(100) NOT NULL,
     rating VARCHAR(20),
@@ -12,14 +14,242 @@ CREATE TABLE IF NOT EXISTS movies (
     trailer_url VARCHAR(500),
     status VARCHAR(30) NOT NULL,
     director VARCHAR(255),
-    cast TEXT,
+    `cast` TEXT,
     producer VARCHAR(255)
 );
 
-INSERT INTO movies
-(title, genre, rating, description, poster_url, trailer_url, status, director, cast, producer)
-VALUES
+-- =========================================
+-- USERS (CUSTOMERS AND ADMINS)
+-- =========================================
 
+CREATE TABLE IF NOT EXISTS users (
+    userID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    firstName VARCHAR(100) NOT NULL,
+    lastName VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    userType VARCHAR(20) NOT NULL DEFAULT 'CUSTOMER',
+    customerStatus VARCHAR(20) DEFAULT 'ACTIVE',
+    promotions BOOLEAN DEFAULT FALSE,
+
+    CONSTRAINT chk_user_type
+        CHECK (userType IN ('CUSTOMER', 'ADMIN')),
+
+    CONSTRAINT chk_customer_status
+        CHECK (
+            customerStatus IS NULL
+            OR customerStatus IN ('ACTIVE', 'SUSPENDED', 'INACTIVE')
+        ),
+
+    CONSTRAINT chk_admin_customer_fields
+        CHECK (
+            (userType = 'CUSTOMER'
+                AND customerStatus IS NOT NULL
+                AND promotions IS NOT NULL)
+            OR
+            (userType = 'ADMIN'
+                AND customerStatus IS NULL
+                AND promotions IS NULL)
+        )
+);
+
+-- =========================================
+-- PROMOTIONS
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS promotions (
+    promotionID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    discountPercentage DECIMAL(5,2) NOT NULL,
+    startDate DATE NOT NULL,
+    endDate DATE NOT NULL,
+
+    CONSTRAINT chk_promotion_discount
+        CHECK (discountPercentage > 0 AND discountPercentage <= 100),
+
+    CONSTRAINT chk_promotion_dates
+        CHECK (endDate >= startDate)
+);
+
+-- =========================================
+-- SHOWROOMS
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS showrooms (
+    roomID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    capacity INT NOT NULL,
+    CONSTRAINT chk_showroom_capacity CHECK (capacity > 0)
+);
+
+-- =========================================
+-- SEATS
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS seats (
+    seatID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `row` VARCHAR(10) NOT NULL,
+    seatNumber INT NOT NULL,
+
+
+    CONSTRAINT chk_seat_number
+        CHECK (seatNumber > 0)
+);
+
+-- =========================================
+-- SHOWS
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS shows (
+    showID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    dateTime DATETIME NOT NULL,
+    movieID BIGINT NOT NULL,
+    roomID BIGINT NOT NULL,
+
+    CONSTRAINT unique_room_datetime
+        UNIQUE (roomID, dateTime),
+
+    CONSTRAINT fk_shows_movie
+        FOREIGN KEY (movieID)
+        REFERENCES movies(movie_id),
+
+    CONSTRAINT fk_shows_showroom
+        FOREIGN KEY (roomID)
+        REFERENCES showrooms(roomID)
+);
+
+-- =========================================
+-- SHOW SEATS
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS show_seats (
+    showSeatID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    showID BIGINT NOT NULL,
+    seatID BIGINT NOT NULL,
+    available BOOLEAN NOT NULL DEFAULT TRUE,
+
+    CONSTRAINT fk_show_seats_show
+        FOREIGN KEY (showID)
+        REFERENCES shows(showID)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_show_seats_seat
+        FOREIGN KEY (seatID)
+        REFERENCES seats(seatID),
+
+    CONSTRAINT unique_show_seat
+        UNIQUE (showID, seatID)
+);
+
+-- =========================================
+-- PAYMENT CARDS
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS payment_cards (
+    cardID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    cardNumber VARCHAR(255) NOT NULL,
+    expirationDate DATE NOT NULL,
+    billingAddress VARCHAR(255) NOT NULL,
+    userID BIGINT NOT NULL,
+
+    CONSTRAINT fk_payment_cards_user
+        FOREIGN KEY (userID)
+        REFERENCES users(userID)
+        ON DELETE CASCADE
+);
+
+-- =========================================
+-- BOOKINGS
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS bookings (
+    bookingID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    bookingDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    total DECIMAL(10,2) NOT NULL,
+    userID BIGINT NOT NULL,
+    cardID BIGINT NOT NULL,
+    promotionID BIGINT NULL,
+
+    CONSTRAINT chk_booking_total
+        CHECK (total >= 0),
+
+    CONSTRAINT fk_bookings_user
+        FOREIGN KEY (userID)
+        REFERENCES users(userID),
+
+
+
+    CONSTRAINT fk_bookings_card
+        FOREIGN KEY (cardID)
+        REFERENCES payment_cards(cardID),
+
+    CONSTRAINT fk_bookings_promotion
+        FOREIGN KEY (promotionID)
+        REFERENCES promotions(promotionID)
+        ON DELETE SET NULL
+);
+
+-- =========================================
+-- TICKETS
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS tickets (
+    ticketID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ticketType VARCHAR(10) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    bookingID BIGINT NOT NULL,
+    showSeatID BIGINT NOT NULL,
+
+    CONSTRAINT chk_ticket_type
+        CHECK (ticketType IN ('ADULT', 'CHILD', 'SENIOR')),
+
+    CONSTRAINT chk_ticket_price
+        CHECK (price >= 0),
+
+    CONSTRAINT fk_tickets_booking
+        FOREIGN KEY (bookingID)
+        REFERENCES bookings(bookingID)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_tickets_show_seat
+        FOREIGN KEY (showSeatID)
+        REFERENCES show_seats(showSeatID),
+
+    CONSTRAINT unique_ticket_show_seat
+        UNIQUE (showSeatID)
+);
+
+-- =========================================
+-- FAVORITES
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS favorites (
+    userID BIGINT NOT NULL,
+    movieID BIGINT NOT NULL,
+    dateAdded DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (userID, movieID),
+
+    CONSTRAINT fk_favorites_user
+        FOREIGN KEY (userID)
+        REFERENCES users(userID)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_favorites_movie
+        FOREIGN KEY (movieID)
+        REFERENCES movies(movie_id)
+        ON DELETE CASCADE
+);
+
+-- =========================================
+-- SAMPLE MOVIES
+-- =========================================
+-- If you rerun this script, these INSERT statements can add duplicate movies.
+-- Run them only when the movies table is empty, or use a separate seed script.
+
+INSERT INTO movies
+(title, genre, rating, description, poster_url, trailer_url, status, director, `cast`, producer)
+VALUES
 (
     'The Batman',
     'Action',
@@ -32,7 +262,6 @@ VALUES
     'Robert Pattinson, Zoë Kravitz, Paul Dano',
     'Warner Bros. Pictures'
 ),
-
 (
     'Interstellar',
     'Science Fiction',
@@ -45,7 +274,6 @@ VALUES
     'Matthew McConaughey, Anne Hathaway, Jessica Chastain',
     'Paramount Pictures'
 ),
-
 (
     'Dune: Part Two',
     'Science Fiction',
@@ -58,7 +286,6 @@ VALUES
     'Timothée Chalamet, Zendaya, Rebecca Ferguson',
     'Warner Bros. Pictures'
 ),
-
 (
     'Inside Out 2',
     'Animation',
@@ -71,7 +298,6 @@ VALUES
     'Amy Poehler, Maya Hawke, Kensington Tallman',
     'Pixar Animation Studios'
 ),
-
 (
     'Oppenheimer',
     'Drama',
@@ -84,7 +310,6 @@ VALUES
     'Cillian Murphy, Emily Blunt, Robert Downey Jr.',
     'Universal Pictures'
 ),
-
 (
     'Spider-Man: Across the Spider-Verse',
     'Animation',
@@ -97,7 +322,6 @@ VALUES
     'Shameik Moore, Hailee Steinfeld, Brian Tyree Henry',
     'Sony Pictures Animation'
 ),
-
 (
     'Barbie',
     'Comedy',
@@ -110,7 +334,6 @@ VALUES
     'Margot Robbie, Ryan Gosling, America Ferrera',
     'Warner Bros. Pictures'
 ),
-
 (
     'Wicked',
     'Fantasy',
@@ -123,7 +346,6 @@ VALUES
     'Cynthia Erivo, Ariana Grande, Jonathan Bailey',
     'Universal Pictures'
 ),
-
 (
     'Moana 2',
     'Animation',
@@ -136,7 +358,6 @@ VALUES
     'Auliʻi Cravalho, Dwayne Johnson, Hualālai Chung',
     'Walt Disney Animation Studios'
 ),
-
 (
     'Deadpool & Wolverine',
     'Action',
@@ -149,7 +370,6 @@ VALUES
     'Ryan Reynolds, Hugh Jackman, Emma Corrin',
     'Marvel Studios'
 ),
-
 (
     'The Super Mario Bros. Movie',
     'Animation',
