@@ -8,26 +8,32 @@ public class Movie {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "movie_id")
     private Long movieId;
 
     private String title;
 
+    @Column(length = 100)
     private String genre;
 
+    @Column(length = 20)
     private String rating;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "poster_url", length = 500)
     private String posterUrl;
 
+    @Column(name = "trailer_url", length = 500)
     private String trailerUrl;
 
+    @Column(length = 30)
     private String status;
 
     private String director;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "`cast`", columnDefinition = "TEXT")
     private String cast;
 
     private String producer;

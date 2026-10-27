@@ -82,7 +82,7 @@ export default function MovieCard({ movie }) {
             aria-label={favorited ? `Remove ${movie.title} from favorites` : `Add ${movie.title} to favorites`}
             title={favorited ? 'Remove from favorites' : 'Add to favorites'}
           >
-            <span className="star-symbol">★</span>
+            <span className="star-symbol" aria-hidden="true">♥</span>
           </button>
         </div>
       </div>

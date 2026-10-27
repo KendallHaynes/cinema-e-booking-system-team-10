@@ -5,6 +5,14 @@ import {
   searchMoviesByTitle,
   filterMoviesByGenre
 } from '../api/movieApi';
+import {
+  addFavoriteMovie,
+  getCurrentUser,
+  getFavoriteMovies,
+  logoutAccount,
+  removeFavoriteMovie,
+  verifyAdminSession
+} from '../api/authApi';
 
 const MovieContext = createContext();
 
@@ -19,7 +27,15 @@ export function MovieProvider({ children }) {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   // Navigation / views
-  const [activePage, setActivePage] = useState('home'); // 'home' | 'movie-detail' | 'booking'
+  const [activePage, setActivePage] = useState(() =>
+    new URLSearchParams(window.location.search).has('verify')
+      ? 'register'
+      : new URLSearchParams(window.location.search).has('reset')
+        ? 'reset-password'
+        : 'home'
+  );
+  const [resetToken] = useState(() => new URLSearchParams(window.location.search).get('reset'));
+  const [currentUser, setCurrentUser] = useState(null);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [selectedShowtime, setSelectedShowtime] = useState(null);
 
@@ -46,14 +62,55 @@ export function MovieProvider({ children }) {
     }, 3200);
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+    getCurrentUser()
+      .then(async (user) => {
+        if (!ignore && user.userId) {
+          if (user.role === 'ADMIN') {
+            await verifyAdminSession();
+          }
+          if (ignore) return;
+          setCurrentUser(user);
+          if (user.role === 'ADMIN') {
+            setActivePage('admin-portal');
+          }
+        }
+      })
+      .catch((error) => {
+        console.error('Unable to restore the signed-in session', error);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) return undefined;
+    let ignore = false;
+    getFavoriteMovies()
+      .then((savedMovies) => {
+        if (!ignore) {
+          setFavorites(savedMovies.map((movie) => movie.movieId));
+        }
+      })
+      .catch((error) => {
+        showNotification(error.message || 'Could not load your favorites.', 'error');
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [currentUser, showNotification]);
+
   // Save favorites to localStorage
   useEffect(() => {
+    if (currentUser) return;
     try {
       localStorage.setItem('ces_favorites', JSON.stringify(favorites));
     } catch (e) {
       console.error('Failed to save favorites to localStorage', e);
     }
-  }, [favorites]);
+  }, [currentUser, favorites]);
 
   // Load initial movies from backend / fallback
   useEffect(() => {
@@ -136,10 +193,30 @@ export function MovieProvider({ children }) {
     showNotification('Filters reset', 'info');
   };
 
-  const toggleFavorite = (movieId, movieTitle) => {
+  const toggleFavorite = async (movieId, movieTitle) => {
+    const isFav = favorites.includes(movieId);
+    if (currentUser) {
+      try {
+        if (isFav) {
+          await removeFavoriteMovie(movieId);
+        } else {
+          await addFavoriteMovie(movieId);
+        }
+        setFavorites((previous) => (
+          isFav ? previous.filter((id) => id !== movieId) : [...previous, movieId]
+        ));
+        showNotification(
+          isFav ? `Removed "${movieTitle}" from favorites` : `Added "${movieTitle}" to favorites`,
+          isFav ? 'info' : 'success'
+        );
+      } catch (error) {
+        showNotification(error.message || 'Could not update your favorites.', 'error');
+      }
+      return;
+    }
+
     setFavorites((prev) => {
-      const isFav = prev.includes(movieId);
-      if (isFav) {
+      if (prev.includes(movieId)) {
         showNotification(`Removed "${movieTitle}" from favorites`, 'info');
         return prev.filter((id) => id !== movieId);
       } else {
@@ -170,6 +247,59 @@ export function MovieProvider({ children }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const navigateRegister = () => {
+    setActivePage('register');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const navigateLogin = useCallback(() => {
+    setActivePage('login');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const navigateForgotPassword = () => {
+    setActivePage('forgot-password');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const completeLogin = async (user) => {
+    if (user.role === 'ADMIN') {
+      await verifyAdminSession();
+    }
+    setCurrentUser(user);
+    setActivePage(user.role === 'ADMIN' ? 'admin-portal' : 'home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const logout = async () => {
+    try {
+      await logoutAccount();
+      setCurrentUser(null);
+      try {
+        const saved = localStorage.getItem('ces_favorites');
+        setFavorites(saved ? JSON.parse(saved) : []);
+      } catch (error) {
+        console.error('Failed to restore guest favorites after logout', error);
+        setFavorites([]);
+      }
+      setActivePage('home');
+      showNotification('You have been signed out.', 'success');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      showNotification(error.message || 'Could not sign out. Please try again.', 'error');
+    }
+  };
+
+  const navigateProfile = () => {
+    if (!currentUser) {
+      showNotification('Sign in to view and edit your profile.', 'info');
+      navigateLogin();
+      return;
+    }
+    setActivePage('profile');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <MovieContext.Provider
       value={{
@@ -195,6 +325,15 @@ export function MovieProvider({ children }) {
         openMovieDetail,
         openBooking,
         navigateHome,
+        navigateRegister,
+        navigateLogin,
+        navigateForgotPassword,
+        navigateProfile,
+        completeLogin,
+        logout,
+        currentUser,
+        resetToken,
+        setActivePage,
         filterModalOpen,
         setFilterModalOpen,
         toast,

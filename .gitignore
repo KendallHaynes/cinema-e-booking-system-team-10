@@ -21,3 +21,7 @@ backend/src/main/resources/application.properties
 
 # Logs
 *.log
+
+# Local database exports and backups
+database/*backup*.sql
+database/*dump*.sql

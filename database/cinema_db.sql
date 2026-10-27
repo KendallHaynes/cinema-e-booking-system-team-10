@@ -54,6 +54,22 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- =========================================
+-- EMAIL VERIFICATION TOKENS
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        token_hash VARCHAR(64) NOT NULL UNIQUE,
+        expires_at DATETIME(6) NOT NULL,
+        userID BIGINT NOT NULL UNIQUE,
+
+        CONSTRAINT fk_email_verification_user
+            FOREIGN KEY (userID)
+            REFERENCES users(userID)
+            ON DELETE CASCADE
+);
+
+-- =========================================
 -- PROMOTIONS
 -- =========================================
 
@@ -142,15 +158,32 @@ CREATE TABLE IF NOT EXISTS show_seats (
 );
 
 -- =========================================
--- PAYMENT CARDS
+-- CUSTOMER ADDRESSES AND PAYMENT CARDS
 -- =========================================
+
+CREATE TABLE IF NOT EXISTS customer_addresses (
+    addressID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    userID BIGINT NOT NULL UNIQUE,
+    street VARCHAR(150) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    region VARCHAR(100) NOT NULL,
+    postalCode VARCHAR(20) NOT NULL,
+    country VARCHAR(100) NOT NULL,
+
+    CONSTRAINT fk_customer_addresses_user
+        FOREIGN KEY (userID)
+        REFERENCES users(userID)
+        ON DELETE CASCADE
+);
 
 CREATE TABLE IF NOT EXISTS payment_cards (
     cardID BIGINT AUTO_INCREMENT PRIMARY KEY,
-    cardNumber VARCHAR(255) NOT NULL,
+    cardNumber VARCHAR(512) NOT NULL,
     expirationDate DATE NOT NULL,
-    billingAddress VARCHAR(255) NOT NULL,
+    billingAddress VARCHAR(512) NOT NULL,
     userID BIGINT NOT NULL,
+    brand VARCHAR(32),
+    lastFour VARCHAR(4),
 
     CONSTRAINT fk_payment_cards_user
         FOREIGN KEY (userID)

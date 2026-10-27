@@ -5,6 +5,11 @@ export default function Navbar() {
     searchQuery,
     handleSearch,
     setFilterModalOpen,
+    navigateRegister,
+    navigateLogin,
+    navigateProfile,
+    currentUser,
+    logout,
     selectedGenre,
     selectedDate,
     favorites,
@@ -17,15 +22,32 @@ export default function Navbar() {
   return (
     <header className="ces-navbar-wrapper">
       <div className="ces-navbar">
-        {/* Top Left: Login Button (Placeholder per requirements, does not do anything yet) */}
+        {/* Account navigation */}
         <div className="navbar-left">
-          <button
-            type="button"
-            className="login-action-btn"
-            aria-label="User Login"
-          >
-            <span className="login-label">Login</span>
-          </button>
+          {currentUser ? (
+            <>
+              <button type="button" className="login-action-btn" onClick={navigateProfile}>
+                <span className="login-label">My Profile</span>
+              </button>
+              <button type="button" className="login-action-btn" onClick={logout}>
+                <span className="login-label">Log out</span>
+              </button>
+            </>
+          ) : (
+            <button type="button" className="login-action-btn" onClick={navigateLogin}>
+              <span className="login-label">Login</span>
+            </button>
+          )}
+          {!currentUser && (
+            <button
+              type="button"
+              className="login-action-btn"
+              onClick={navigateRegister}
+              aria-label="Create an account"
+            >
+              <span className="login-label">Register</span>
+            </button>
+          )}
 
         </div>
 

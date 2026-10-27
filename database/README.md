@@ -4,11 +4,11 @@
 
 This directory contains the MySQL database setup for the Cinema E-Booking System (CES).
 
-The database stores movie information used by the Spring Boot backend.
+The database stores cinema catalog, user, scheduling, and booking information used by the Spring Boot backend.
 
 Database name:
 
-    cinema_db
+    cinema_db_schema
 
 Database management system:
 
@@ -16,11 +16,9 @@ Database management system:
 
 ## Current Database Structure
 
-The current Sprint 1 database contains one table:
-
-    movies
-
-The `movies` table stores the movie information displayed by the Cinema E-Booking System.
+The schema defines movies, users, email-verification tokens, promotions,
+showrooms, seats, shows, show seats, customer addresses, payment cards,
+bookings, tickets, and favorites.
 
 ## Movies Table
 
@@ -119,23 +117,25 @@ Enter the MySQL root password when prompted.
 
 ### 3. Create the database
 
-The SQL file contains the commands required to create the database and movies table.
+The SQL file creates the database and all defined tables, then inserts the movie seed data.
 
-The database is:
+The database created by the current SQL file is:
 
-    cinema_db
+    cinema_db_schema
 
 ### 4. Select the database
 
-    USE cinema_db;
+    USE cinema_db_schema;
 
 ### 5. Check the movies table
 
     SHOW TABLES;
 
-You should see:
+You should see tables including:
 
     movies
+    users
+    favorites
 
 ### 6. View the movie data
 
@@ -219,9 +219,36 @@ The flow is:
 
 The database is therefore the source of truth for the movie information displayed by the application.
 
-## Sprint 1 Scope
+## Users Table
 
-The database currently focuses on movie data because Sprint 1 requires:
+The `users` table stores customer and administrator accounts. Account types are
+`CUSTOMER` or `ADMIN`; customer statuses are `ACTIVE`, `SUSPENDED`, or
+`INACTIVE`. New registrations are created as `CUSTOMER` accounts with
+`INACTIVE` status until the user confirms their email. The backend stores a
+secure password hash in the `password` column, never the plaintext password.
+
+The `email_verification_tokens` table stores only a hash of each single-use
+verification token and its expiration time.
+
+The `customer_addresses` table enforces at most one saved address per user.
+The `payment_cards` table permits up to three saved cards per user through
+backend validation and stores encrypted card numbers after the application
+starts. The profile API returns only the card brand and last four digits.
+Favorites are linked to both the user and movie and are stored in the
+`favorites` table.
+
+### Migrate an existing registration schema
+
+If registration fails with a MySQL error such as `Field 'first_name' doesn't
+have a default value`, the existing `users` table has legacy snake_case columns
+alongside the current camelCase columns. Back up the database, then run
+`migrate_registration_columns.sql` once against `cinema_db_schema`. It copies
+legacy values into the current columns and removes the obsolete duplicates.
+New databases created from `cinema_db.sql` do not need this migration.
+
+## Current Scope
+
+The database supports movie browsing and defines tables for:
 
 - Dynamic movie retrieval
 - Movie search
@@ -229,19 +256,11 @@ The database currently focuses on movie data because Sprint 1 requires:
 - Currently Running movies
 - Coming Soon movies
 - Movie details
-
-Showtimes are currently hardcoded for the Sprint 1 prototype.
-
-Future database versions may add tables for:
-
-- Users
 - Payment cards
-- Halls
 - Seats
-- Showtimes
-- Orders
+- Shows and show seats
+- Bookings
 - Tickets
 - Favorites
 - Promotions
-
-These tables will support the full Cinema E-Booking System in later development stages.
+- Users and showrooms

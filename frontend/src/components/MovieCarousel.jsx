@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import MovieCard from './MovieCard';
 
-export default function MovieCarousel({ title, subtitle, movies, icon }) {
+export default function MovieCarousel({ title, subtitle, movies }) {
   const scrollContainerRef = useRef(null);
 
   const handleScroll = (direction) => {

@@ -74,7 +74,7 @@ export default function HomePage() {
               <h2 className="empty-title">No Movies Found</h2>
               <p className="empty-desc">
                 {showFavoritesOnly
-                  ? "You haven't added any movies to your favorites yet. Click the star icon on any movie to favorite it!"
+                  ? "You haven't added any movies to your favorites yet. Select the heart on any movie to save it here."
                   : `We couldn't find any movies matching your search criteria. Please try a different title or reset your genre filters.`}
               </p>
               <button

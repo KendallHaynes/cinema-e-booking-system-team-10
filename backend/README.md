@@ -8,6 +8,7 @@ The backend provides a REST API that connects the React frontend to the MySQL da
 
 The backend is responsible for:
 
+- Registering customer accounts and confirming email addresses
 - Retrieving movies from MySQL
 - Searching movies by title
 - Filtering movies by genre
@@ -189,7 +190,7 @@ The React frontend can use this response to display an appropriate "No movies fo
 
 The backend connects to the MySQL database:
 
-    Database: cinema_db
+    Database: cinema_db_schema
     Host: localhost
     Port: 3306
     Username: root
@@ -200,9 +201,15 @@ The connection configuration is stored in:
 
 The password should remain local and should NOT be committed to GitHub.
 
+The default database URL uses the database created by `database/cinema_db.sql`:
+
+    jdbc:mysql://localhost:3306/cinema_db_schema
+
+Override it with the `DB_URL` environment variable when using a different database.
+
 Example configuration:
 
-    spring.datasource.url=jdbc:mysql://localhost:3306/cinema_db
+    spring.datasource.url=jdbc:mysql://localhost:3306/cinema_db_schema
     spring.datasource.username=root
     spring.datasource.password=YOUR_MYSQL_PASSWORD
 
@@ -252,6 +259,11 @@ The response should contain the movies stored in MySQL.
 
 For Sprint 1 / Deliverable 2, the backend currently supports:
 
+- Customer registration with email confirmation
+- Server-side login sessions and logout
+- Login and password reset by email
+- Role-based customer/admin landing-page navigation
+- Editable customer profile, one saved address, up to three encrypted payment cards, and database-backed favorites
 - Dynamic movie retrieval from MySQL
 - Movie search by title
 - Movie filtering by genre
@@ -262,4 +274,128 @@ For Sprint 1 / Deliverable 2, the backend currently supports:
 
 Showtimes and booking functionality are currently handled as prototype functionality in the frontend.
 
-Full booking, ticket, payment, seat reservation, favorites, promotions, and administrative functionality will be implemented in later development stages.
+Full booking, ticket, payment processing, promotions, and administrative functionality will be implemented in later development stages. The admin portal is an authenticated navigation prototype; its menu sections are not functional management tools or protected management APIs.
+
+## Customer Registration
+
+Registration is available through:
+
+    POST /api/auth/register
+
+The request requires `firstName`, `lastName`, `email`, `password`, and `confirmPassword`. The optional `promotions` field defaults to `false`. Passwords must be at least 10 characters and include an uppercase letter, lowercase letter, number, and symbol.
+
+New customers are saved in the `users` table with `userType=CUSTOMER` and `customerStatus=INACTIVE`. Passwords are BCrypt-hashed. The API sends an email with a single-use, 24-hour confirmation link; the link activates the account through:
+
+    POST /api/auth/verify-email?token={token}
+
+The verification token is stored as a SHA-256 hash in the JPA-managed `email_verification_tokens` table. Email delivery requires an SMTP server. Configure it using `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_AUTH`, and `SMTP_STARTTLS`; set `APP_MAIL_FROM` and `APP_FRONTEND_URL` for the sender address and public frontend URL. Local defaults target a development SMTP service on `localhost:1025` and the frontend on `http://localhost:5173`.
+
+## Login and password reset
+
+Login is available through `POST /api/auth/login` with an email and password:
+
+    {
+      "email": "customer@example.com",
+      "password": "YourAccountPassword!1"
+    }
+
+Emails are matched case-insensitively. A successful response contains the
+account's `email`, `name`, and `role` (`CUSTOMER` or `ADMIN`). Incorrect email
+and password combinations return the same error. Unverified and suspended
+customer accounts receive a status-specific message.
+
+To reset a password, submit an email address to `POST /api/auth/forgot-password`.
+The response is deliberately the same whether or not an account exists. If it
+does, the configured mail sender sends a one-time link that expires after 30
+minutes. The link opens the frontend reset form, which submits the token, new
+password, and confirmation to `POST /api/auth/reset-password`. The new password
+must meet the registration password requirements. Reset tokens are stored as
+SHA-256 hashes and deleted after successful use.
+
+After signing in, customers are routed to the movie home page and admins to the
+admin portal prototype. The login creates an HTTP-only server session; logout
+invalidates it, and `/api/admin/session` checks the current database role before
+granting admin portal access. Its menu includes Manage Movies, Promotions,
+Users, and Bookings. Those menu sections are prototypes, not functional admin
+tools. To prepare an admin demo, first register and verify a normal account,
+then promote that account using a secured database client:
+
+    UPDATE users
+    SET userType = 'ADMIN', customerStatus = NULL, promotions = NULL
+    WHERE email = 'admin@example.com';
+
+The admin signs in with the password already set on that account. Do not use
+this manual promotion workflow in production; no admin management APIs or
+business data are implemented yet.
+
+## Profile, cards, and favorites
+
+Signed-in customers can use **My Profile** to edit their first and last names,
+save one mailing/billing address, review or remove saved cards, and change their
+password. The email address is displayed read-only. Changing personal
+information sends a security notification to the account email. Changing the
+password requires the current password and the new password is BCrypt-hashed.
+
+Saved payment cards are limited to three per user. The app encrypts card
+numbers using AES-256-GCM before database storage, displays only the card brand
+and last four digits, and never asks for or stores a CVV. Generate a private,
+base64-encoded 32-byte key once and store it in a password manager:
+
+    openssl rand -base64 32
+
+Before starting the backend, enter that saved key at the hidden prompt:
+
+    read -rs "PAYMENT_CARD_ENCRYPTION_KEY?Saved payment-card key (input hidden): "
+    printf '\n'
+    export PAYMENT_CARD_ENCRYPTION_KEY
+
+Keep the same key across restarts and back it up securely; replacing or losing
+it makes stored card numbers unrecoverable. Do not commit the key. If existing
+payment-card rows contain plaintext numbers, the backend encrypts those rows
+on startup and requires this key to be configured before it can finish startup.
+Use HTTPS and a managed secrets store outside local demos; application-level
+encryption does not make this prototype a payment processor or PCI-compliant
+card vault.
+
+Favorites are stored per signed-in user in the `favorites` table. Selecting the
+heart on a movie saves or removes it, and the Favorites filter shows saved
+movies across sessions. Guests may still use the existing browser-local
+favorites.
+
+Session cookies are HTTP-only and use `SameSite=Lax`. The Vite development
+server proxies `/api` requests to the backend so the browser uses the same
+origin for the session cookie. In a deployment, use HTTPS and configure the
+frontend/backend under a same-site origin; set `SESSION_COOKIE_SECURE=true`.
+
+### Send email through Gmail
+
+The address entered by the customer in the form is the recipient. Gmail is only
+the account the backend sends through. For example, to send through
+`cinemaebooking10@gmail.com`, first enable 2-Step Verification for that Google
+account and create a Google App Password. Do not use your regular Google
+password or commit the App Password.
+
+In the macOS Terminal (default `zsh`), enter the App Password at the hidden
+prompt and start the backend in that same terminal:
+
+    cd backend
+    read -rs "SMTP_PASSWORD?Gmail App Password (without spaces; input hidden): "
+    printf '\n'
+    export SMTP_PASSWORD
+    export SMTP_HOST=smtp.gmail.com SMTP_PORT=587
+    export SMTP_USERNAME=cinemaebooking10@gmail.com APP_MAIL_FROM=cinemaebooking10@gmail.com
+    export SMTP_AUTH=true SMTP_STARTTLS=true
+    ./mvnw spring-boot:run
+
+Keep this terminal open while testing. The password is held only in that
+terminal's environment and is not added to the project or shell history. Stop
+the currently running backend before starting it this way. To return to
+Mailpit, start the backend without these Gmail settings so it uses the local
+defaults.
+
+For local testing, install and start [Mailpit](https://mailpit.axllent.org/):
+
+    brew install mailpit
+    mailpit --listen 127.0.0.1:8025 --smtp 127.0.0.1:1025
+
+Open `http://127.0.0.1:8025` to inspect confirmation emails. The local-only bind keeps the test SMTP server and its inbox off the network.
