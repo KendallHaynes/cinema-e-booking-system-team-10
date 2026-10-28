@@ -32,15 +32,18 @@ and SMTP settings in a local `backend/src/main/resources/application.properties`
 file or through environment variables. Do not commit credentials, SMTP app
 passwords, encryption keys, or database dumps.
 
-Payment-card encryption requires a stable, private AES-256 key. Generate one
-and save it in a password manager:
+Payment-card encryption requires a stable, private AES-256 key. For local
+development, store the key in the Git-ignored
+`backend/src/main/resources/application.properties` or provide it through the
+backend environment. This machine's key is not included in Git; every developer
+must configure and securely retain their own key. Generate a key once and save
+it in a password manager:
 
 ```sh
 openssl rand -base64 32
 ```
 
-Before starting the backend, set the saved value in the terminal without
-printing it:
+Then either set the saved value in the backend process environment:
 
 ```sh
 cd backend
@@ -113,7 +116,7 @@ affected** means the email did not match a user. The admin signs in with the
 same email and password already registered. Sign out first if the browser has
 an existing session, then sign in again; the frontend checks the current
 database role and opens the Admin Portal. The menu displays **Manage Movies**,
-**Promotions**, **Users**, and **Bookings**.
+**Promotions**, **Users**, and **Showtimes**.
 
 To demote that account back to a customer:
 
@@ -130,8 +133,52 @@ changes as a production admin-management process. The admin portal is a
 navigation prototype; the listed management sections do not yet implement
 admin operations.
 
+## Preparing the demo accounts
+
+The backend includes an opt-in demo seeder. It creates or updates these local
+accounts before a demo:
+
+- Admin: `kndllhaynes@gmail.com` (`Kendall Admin`)
+- Verified favorite user: `kch55499@uga.edu` (`Kendall Favorite`), with a movie
+  already saved to favorites
+- Verified card user: `kendallhaynes7730@gmail.com` (`Kendall Card`), with an
+  address and three saved cards (missing cards are filled with encrypted,
+  demo-only test numbers)
+
+The same password is set for all three accounts using the
+`DEMO_SEED_PASSWORD` environment variable. The seeder is disabled by default.
+Run the backend once with demo seeding enabled before the presentation; it is
+idempotent and can be run again without duplicating favorites or adding cards
+past the three-card limit. Existing matching accounts are updated to the demo
+names, roles, active status, and password. Existing addresses and saved cards
+are preserved; fake test cards are added until the account has three cards.
+
+On macOS, enter the password without placing it in shell history:
+
+```sh
+cd backend
+read -rs "DEMO_SEED_PASSWORD?Demo account password (input hidden): "
+printf '\n'
+export DEMO_SEED_PASSWORD
+export DEMO_SEED_ENABLED=true
+./mvnw spring-boot:run
+```
+
+Wait for the backend to report that demo data is ready. Stop it with
+`Control+C`, then unset the temporary environment variables:
+
+```sh
+unset DEMO_SEED_PASSWORD DEMO_SEED_ENABLED
+```
+
+Start the backend normally afterward. Never use real payment-card numbers in
+the demo; the seeded cards are test values and are encrypted using the local
+card-encryption key.
+
 ## Database and backend references
 
+- [Complete setup, account/email workflows, API overview, and feature guide](./PROJECT-GUIDE.md)
+- [Pre-seeded demo tutorial](./DEMO-TUTORIAL.md)
 - [Backend endpoints, SMTP, encryption-key handling, and security details](./backend/README.md)
 - [Database schema and setup](./database/README.md)
 

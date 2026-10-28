@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const adminSections = ['Manage Movies', 'Promotions', 'Users', 'Bookings'];
+const adminSections = ['Manage Movies', 'Promotions', 'Users', 'Showtimes'];
 
 export default function AdminPortalPage({ user, onLogout }) {
   const [selectedSection, setSelectedSection] = useState('');

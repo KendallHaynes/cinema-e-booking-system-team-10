@@ -316,7 +316,7 @@ After signing in, customers are routed to the movie home page and admins to the
 admin portal prototype. The login creates an HTTP-only server session; logout
 invalidates it, and `/api/admin/session` checks the current database role before
 granting admin portal access. Its menu includes Manage Movies, Promotions,
-Users, and Bookings. Those menu sections are prototypes, not functional admin
+Users, and Showtimes. Those menu sections are prototypes, not functional admin
 tools. To prepare an admin demo, first register and verify a normal account,
 then promote that account using a secured database client:
 
@@ -338,12 +338,17 @@ password requires the current password and the new password is BCrypt-hashed.
 
 Saved payment cards are limited to three per user. The app encrypts card
 numbers using AES-256-GCM before database storage, displays only the card brand
-and last four digits, and never asks for or stores a CVV. Generate a private,
-base64-encoded 32-byte key once and store it in a password manager:
+and last four digits, and never asks for or stores a CVV. A base64-encoded
+32-byte key is required. For local development, store it in
+`src/main/resources/application.properties`, which is ignored by Git, or pass
+it as an environment variable. Each developer must create and securely retain
+their own key. This machine's key is already configured in its ignored local
+settings; do not delete or replace it. Back it up in a password manager.
+Generate a key once for another machine and save it in a password manager:
 
     openssl rand -base64 32
 
-Before starting the backend, enter that saved key at the hidden prompt:
+Before starting the backend, enter the saved key at the hidden prompt:
 
     read -rs "PAYMENT_CARD_ENCRYPTION_KEY?Saved payment-card key (input hidden): "
     printf '\n'
@@ -362,10 +367,49 @@ heart on a movie saves or removes it, and the Favorites filter shows saved
 movies across sessions. Guests may still use the existing browser-local
 favorites.
 
+## Preparing demo accounts
+
+The optional demo seeder is disabled by default. To prepare the demo accounts
+before the presentation, stop the normal backend, then start it once with
+`DEMO_SEED_ENABLED=true` and `DEMO_SEED_PASSWORD` set. On macOS, enter the
+password at a hidden prompt:
+
+    cd backend
+    read -rs "DEMO_SEED_PASSWORD?Demo account password (input hidden): "
+    printf '\n'
+    export DEMO_SEED_PASSWORD
+    export DEMO_SEED_ENABLED=true
+    ./mvnw spring-boot:run
+
+Wait for the `Demo data is ready` message, stop the backend with `Control+C`,
+and clear the temporary environment variables:
+
+    unset DEMO_SEED_PASSWORD DEMO_SEED_ENABLED
+
+Start the backend normally after seeding. The seeder creates or updates the
+admin `kndllhaynes@gmail.com`, verified favorite user `kch55499@uga.edu`, and
+verified card user `kendallhaynes7730@gmail.com`. It stores a favorite for the
+favorite user and adds fake test cards, encrypted with the configured
+card-encryption key, until the card user has three. Existing addresses and
+saved cards are preserved. Re-running the seeder does not duplicate the
+favorite or exceed the three-card limit. Never use real payment-card numbers
+for this demo.
+
 Session cookies are HTTP-only and use `SameSite=Lax`. The Vite development
 server proxies `/api` requests to the backend so the browser uses the same
 origin for the session cookie. In a deployment, use HTTPS and configure the
 frontend/backend under a same-site origin; set `SESSION_COOKIE_SECURE=true`.
+
+### Backend launch troubleshooting
+
+Start the backend from this directory with the Maven wrapper:
+
+    ./mvnw spring-boot:run
+
+Do not launch `CinemaBackendApplication` with only `target/classes` on the Java
+classpath. That omits Spring Boot and other dependency JARs and causes
+`NoClassDefFoundError: org/springframework/boot/SpringApplication`. The Maven
+wrapper resolves and supplies the full runtime classpath.
 
 ### Send email through Gmail
 

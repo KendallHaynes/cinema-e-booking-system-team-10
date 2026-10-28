@@ -101,6 +101,22 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
+    public void configureDemoAccount(
+            String firstName,
+            String lastName,
+            String passwordHash,
+            String userType,
+            String customerStatus,
+            Boolean promotions
+    ) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.passwordHash = passwordHash;
+        this.userType = userType;
+        this.customerStatus = customerStatus;
+        this.promotions = promotions;
+    }
+
     public void updateProfile(String firstName, String lastName) {
         this.firstName = firstName;
         this.lastName = lastName;

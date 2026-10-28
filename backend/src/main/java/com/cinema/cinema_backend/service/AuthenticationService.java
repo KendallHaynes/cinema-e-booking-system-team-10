@@ -72,7 +72,10 @@ public class AuthenticationService {
 
         if (!"ADMIN".equals(user.getUserType())) {
             if ("INACTIVE".equals(user.getCustomerStatus())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Confirm your email address before signing in.");
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Account is not verified. Please check your email to verify your account."
+                );
             }
             if ("SUSPENDED".equals(user.getCustomerStatus())) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This account is suspended. Contact support.");

@@ -119,7 +119,10 @@ class AuthenticationServiceTest {
                 () -> authenticationService.login(new LoginRequest("jane@example.com", "Secure!Password1"))
         );
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
-        assertTrue(exception.getReason().contains("Confirm your email"));
+        assertEquals(
+                "Account is not verified. Please check your email to verify your account.",
+                exception.getReason()
+        );
     }
 
     @Test
