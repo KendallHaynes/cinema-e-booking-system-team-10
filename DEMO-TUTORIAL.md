@@ -86,11 +86,10 @@ seeder against a public or production database.
 1. Sign in with the admin account and open **Manage Movies**. Add a movie with
    its required title, genre, description, and status; verify it appears in the
    catalog.
-2. Open **Manage Showtimes**, choose a movie, showroom, and future date/time,
+2. Open **Manage Showtimes**, choose a movie, future date/time, and available showroom,
    then schedule it. The sample data includes three auditoriums; attempt to
-   schedule the same showroom at the same time to demonstrate conflict
-   validation.
-3. Sign in as a customer, open a movie with an upcoming screening, and choose a
+   select the same time again and verify the occupied room is excluded.
+3. While signed out, open a movie with an upcoming screening, and choose a
    showtime. Change adult/child/senior quantities, select the matching number
    of available seats, and verify booked seats are disabled.
 4. Proceed to checkout. If signed out, log in and confirm the selection is
@@ -102,11 +101,13 @@ seeder against a public or production database.
    Confirm the admin sees the recipient/failure counts and that only active,
    subscribed accounts receive the message.
 
-Proceeding to checkout marks the selected seats unavailable for that
-showtime. These reservations persist and are not automatically released;
-reset them in the database after the demo if you need to reuse seats. The
-payment page is non-functional and does not process payment or finalize an
-order.
+For a two-browser check, select one adult and one child ticket and choose two
+seats. Keep the guest login screen open. In a private window, open the same
+showtime and verify both seats are unavailable. In the original window, sign
+in and verify both seat labels and a $22.50 pre-tax total. Try an invalid
+email, then enter a valid alternate email and continue to the mock payment
+page. Sign out and reopen the private window’s seat map. The two seats should
+be available again, while previously booked seats should still be disabled.
 
 ## Troubleshooting
 

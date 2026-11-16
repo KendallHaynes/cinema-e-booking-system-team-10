@@ -111,40 +111,4 @@ class ShowtimeServiceTest {
         assertFalse(result.get(0).available());
         verify(ticketRepository).findBookedShowSeatIds(anyCollection());
     }
-
-    @Test
-    void reservesAllRequestedAvailableSeats() {
-        when(showtimeRepository.existsById(3L)).thenReturn(true);
-        when(showSeatRepository.reserveAvailableSeats(3L, List.of(12L, 13L))).thenReturn(2);
-
-        showtimeService.reserveSeats(3L, List.of(12L, 13L), 2);
-
-        verify(showSeatRepository).reserveAvailableSeats(3L, List.of(12L, 13L));
-    }
-
-    @Test
-    void rejectsSeatReservationWhenAnySeatIsNoLongerAvailable() {
-        when(showtimeRepository.existsById(3L)).thenReturn(true);
-        when(showSeatRepository.reserveAvailableSeats(3L, List.of(12L, 13L))).thenReturn(1);
-
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> showtimeService.reserveSeats(3L, List.of(12L, 13L), 2)
-        );
-
-        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
-    }
-
-    @Test
-    void rejectsSeatCountThatDoesNotMatchTicketCount() {
-        when(showtimeRepository.existsById(3L)).thenReturn(true);
-
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> showtimeService.reserveSeats(3L, List.of(12L, 13L), 1)
-        );
-
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
-        verify(showSeatRepository, never()).reserveAvailableSeats(any(), any());
-    }
 }

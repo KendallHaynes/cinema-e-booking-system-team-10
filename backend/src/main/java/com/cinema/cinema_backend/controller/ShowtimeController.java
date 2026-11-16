@@ -4,6 +4,13 @@ import com.cinema.cinema_backend.repository.UserRepository;
 import com.cinema.cinema_backend.service.ShowtimeService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+import com.cinema.cinema_backend.service.SessionSeatHolds;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -27,7 +34,10 @@ public class ShowtimeController {
     private final ShowtimeService showtimeService;
     private final UserRepository userRepository;
 
-    public ShowtimeController(ShowtimeService showtimeService, UserRepository userRepository) {
+    private final SessionSeatHolds holds;
+
+    public ShowtimeController(ShowtimeService showtimeService, UserRepository userRepository, SessionSeatHolds holds) {
+        this.holds = holds;
         this.showtimeService = showtimeService;
         this.userRepository = userRepository;
     }
@@ -38,8 +48,16 @@ public class ShowtimeController {
     }
 
     @GetMapping("/{showId}/seats")
-    public List<ShowSeatResponse> getSeats(@PathVariable Long showId) {
-        return showtimeService.getSeats(showId);
+    public List<ShowSeatResponse> getSeats(@PathVariable Long showId, HttpSession session) {
+        return holds.seatMap(session, showtimeService.getSeats(showId));
+    }
+
+    public record Selection(@NotNull @Size(max = 8) List<@NotNull @Positive Long> showSeatIds) {}
+
+    @PutMapping("/{showId}/selection")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void select(@PathVariable Long showId, @Valid @RequestBody Selection request, HttpSession session) {
+        holds.select(session, showId, request.showSeatIds(), showtimeService.getSeats(showId));
     }
 
     @PostMapping("/{showId}/reserve")
@@ -54,8 +72,25 @@ public class ShowtimeController {
         if (!"CUSTOMER".equals(user.getUserType())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only customer accounts can reserve seats.");
         }
-        showtimeService.reserveSeats(showId, request.showSeatIds(), request.ticketCount());
+        if (request.showSeatIds().size() != request.ticketCount()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Select one seat per ticket.");
+        }
+        holds.select(session, showId, request.showSeatIds(), showtimeService.getSeats(showId));
+        session.setAttribute("checkoutShowId", showId);
         return new SeatReservationResponse(request.showSeatIds().size());
+    }
+
+    public record CheckoutEmail(@NotBlank @Email @Size(max = 255) String email) {}
+
+    @PostMapping("/{showId}/checkout-email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void confirmEmail(@PathVariable Long showId, @Valid @RequestBody CheckoutEmail request, HttpSession session) {
+        SessionAccount.requireUserId(session);
+        if (!showId.equals(session.getAttribute("checkoutShowId"))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Review your seat selection before continuing.");
+        }
+        holds.requireSelection(session, showId);
+        session.setAttribute("checkoutEmail", request.email());
     }
 
     @PostMapping("/admin")

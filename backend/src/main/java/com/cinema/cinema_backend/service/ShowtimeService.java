@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -104,29 +103,6 @@ public class ShowtimeService {
                         showSeat.isAvailable() && !bookedSeats.contains(showSeat.getShowSeatId())
                 ))
                 .toList();
-    }
-
-    @Transactional
-    public void reserveSeats(Long showId, List<Long> showSeatIds, int ticketCount) {
-        if (!showtimeRepository.existsById(showId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Showtime was not found.");
-        }
-        if (showSeatIds.size() != ticketCount) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "The number of selected seats must match the number of tickets."
-            );
-        }
-        if (showSeatIds.size() != new HashSet<>(showSeatIds).size()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A seat can only be selected once.");
-        }
-        int reservedCount = showSeatRepository.reserveAvailableSeats(showId, showSeatIds);
-        if (reservedCount != showSeatIds.size()) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "One or more selected seats are already booked or belong to another showtime. Refresh the seat map and try again."
-            );
-        }
     }
 
     private ShowtimeResponse toResponse(Showtime showtime) {

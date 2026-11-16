@@ -244,6 +244,7 @@ export function MovieProvider({ children }) {
   };
 
   const openBooking = (movie, showtime) => {
+    setCheckoutLoginPending(false);
     setSelectedMovie(movie);
     setSelectedShowtime(showtime);
     setTicketCounts({ adult: 1, child: 0, senior: 0 });
@@ -334,6 +335,9 @@ export function MovieProvider({ children }) {
     try {
       await logoutAccount();
       setCurrentUser(null);
+      setCheckoutLoginPending(false);
+      setCheckoutReserved(false);
+      setSelectedSeats([]);
       try {
         const saved = localStorage.getItem('ces_favorites');
         setFavorites(saved ? JSON.parse(saved) : []);

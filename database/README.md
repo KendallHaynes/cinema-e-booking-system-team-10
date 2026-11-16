@@ -283,6 +283,5 @@ Admins can add movies and schedule further showtimes from the Admin Portal.
 Customers see future scheduled showtimes on each movie page and can continue
 through seat selection, checkout summary, and the mock payment page. A show
 cannot be scheduled in the same showroom at an already-used date and time.
-Proceeding to checkout marks selected seats unavailable for that showtime.
-These demo reservations remain unavailable until manually reset; the mock
-payment page does not process payment or finalize an order.
+The server keeps session holds in memory. The seat map combines those holds
+with persistent seat availability and booked tickets from the database.

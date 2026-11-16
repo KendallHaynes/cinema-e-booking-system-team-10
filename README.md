@@ -210,9 +210,9 @@ screenings.
 Customers select a movie and database-backed showtime, choose ticket quantities
 and available seats, then continue to checkout. Checkout requires a signed-in
 customer; the current booking selection remains in the browser during login.
-When the customer proceeds to checkout, the backend marks the selected seats
-unavailable for that showtime. These demo reservations remain unavailable until
-reset in the database; no automatic release is implemented.
+Selecting a seat holds it for the browser’s server session. Other sessions see
+it as unavailable. Deselecting a seat, replacing the selection, signing out,
+or session expiration releases the corresponding hold.
 The order summary shows movie, showtime, seat labels, ticket types/prices, and
 the total before tax. Customers can confirm or change the email for this
 checkout before viewing the mock payment-processing page. No payment is
@@ -243,11 +243,8 @@ feature. Unsubscribed and inactive accounts are not recipients.
 | Payment page | Displays a payment-processing mockup only. It does not collect card data, process payments, or finalize bookings. |
 | Architecture, validation, and test readiness | React UI, REST controllers, services, repositories, and MySQL follow a layered architecture. Validation is client- and server-side; backend unit tests cover scheduling, reservations, and seeding. Use the invalid showtime conflict and seat-already-taken paths in the demo. |
 
-**Reservation behavior note:** The rubric describes a session reservation and
-does not require real-time locking. As requested, this implementation instead
-persists unavailable seats at checkout so other customers see them as booked.
-No automatic release is implemented; reset demo reservations manually when
-reusing the same seat map.
+The single-server demo tracks temporary holds in memory. A server restart clears
+those holds. MySQL remains the source of truth for booked tickets and the seat map.
 
 ## Database and backend references
 
@@ -262,7 +259,8 @@ password updates; `/api/favorites` for protected favorites; `/api/admin/session`
 to verify an administrator role; `/api/movies/admin` for admin-only movie
 creation; `/api/showrooms` and `/api/showtimes` for showtime/seat data;
 `POST /api/showtimes/admin` for admin-only scheduling;
-authenticated `POST /api/showtimes/{showId}/reserve` for checkout seat
+`PUT /api/showtimes/{showId}/selection` for session holds and authenticated
+`POST /api/showtimes/{showId}/reserve` for checkout seat
 reservations; and `POST /api/promotions/admin` for admin-only promotion
 creation and subscriber email delivery.
 
@@ -293,5 +291,4 @@ npm run build
 - Promotion emails require recipients to be active and have opted in to
   promotions; delivery failures are reported in the Admin Portal.
 - The payment page is a mockup: no payment is processed and no booking is
-  finalized. Seats are marked unavailable when checkout begins and remain so
-  until manually reset in the database.
+  finalized. Temporary seat holds end when replaced or when the session ends.

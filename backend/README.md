@@ -298,8 +298,8 @@ The backend supports:
 - Showtime and seat-map retrieval for customer browsing and bookings
 
 Customers can select seats, review their order, confirm an email address, and
-continue to the mock payment-processing page. Seats are marked unavailable
-when checkout begins and remain so until manually reset. The page does not
+continue to the mock payment-processing page. The server holds selected seats for the current session
+and releases them on replacement, logout, or session expiration. The page does not
 process payment or finalize a booking. User management is not implemented in
 this sprint.
 ## Customer Registration

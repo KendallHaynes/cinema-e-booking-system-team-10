@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getShowtimeSeats } from '../api/showtimeApi';
+import { confirmCheckoutEmail, getShowtimeSeats, selectShowtimeSeats } from '../api/showtimeApi';
 import { useMovieContext } from '../context/MovieContext';
 
 const TICKET_TYPES = {
@@ -102,16 +102,41 @@ export default function BookingPage() {
     setValidationError('');
   }
 
-  function toggleSeat(seat) {
-    setSelectedSeats((current) => {
-      if (current.includes(seat.showSeatId)) {
-        return current.filter((id) => id !== seat.showSeatId);
-      }
-      if (current.length >= ticketCount) return current;
-      return [...current, seat.showSeatId];
-    });
+  async function toggleSeat(seat) {
+    const next = selectedSeats.includes(seat.showSeatId)
+      ? selectedSeats.filter((id) => id !== seat.showSeatId)
+      : [...selectedSeats, seat.showSeatId];
+    setReservingSeats(true);
     setValidationError('');
     setCheckoutError('');
+    try {
+      await selectShowtimeSeats(selectedShowId, next);
+      setSelectedSeats(next);
+    } catch (error) {
+      setValidationError(error.message);
+      try {
+        const updated = await getShowtimeSeats(selectedShowId);
+        setSeatResult({ showId: selectedShowId, seats: updated, error: '' });
+      } catch (refreshError) {
+        setValidationError(refreshError.message);
+      }
+    } finally {
+      setReservingSeats(false);
+    }
+  }
+
+  async function continueToPayment(event) {
+    event.preventDefault();
+    setValidationError('');
+    setReservingSeats(true);
+    try {
+      await confirmCheckoutEmail(selectedShowId, checkoutEmail);
+      setCheckoutStep('payment');
+    } catch (error) {
+      setValidationError(error.message);
+    } finally {
+      setReservingSeats(false);
+    }
   }
 
   async function continueToCheckout() {
@@ -228,7 +253,7 @@ export default function BookingPage() {
                               key={seat.showSeatId}
                               type="button"
                               className={className}
-                              disabled={!seat.available || (!isSelected && selectedSeats.length >= ticketCount)}
+                              disabled={reservingSeats || !seat.available || (!isSelected && selectedSeats.length >= ticketCount)}
                               onClick={() => toggleSeat(seat)}
                               title={`${seat.seatLabel}: ${seat.available ? (isSelected ? 'Selected' : 'Available') : 'Booked'}`}
                               aria-label={`Seat ${seat.seatLabel}${seat.available ? '' : ', booked'}`}
@@ -249,7 +274,7 @@ export default function BookingPage() {
                 <div className="legend-item"><span className="legend-sample selected"></span><span>Selected</span></div>
                 <div className="legend-item"><span className="legend-sample occupied"></span><span>Booked</span></div>
               </div>
-              <p className="registration-intro">Seats are marked booked when you proceed to checkout and stay unavailable for this showtime.</p>
+              <p className="registration-intro">Your session holds each selected seat while you sign in and review your order.</p>
             </section>
           </div>
 
@@ -297,10 +322,8 @@ export default function BookingPage() {
             <div><dt>Price per ticket</dt><dd>{Object.entries(TICKET_TYPES).filter(([type]) => ticketCounts[type] > 0).map(([, details]) => `${details.label}: $${details.price.toFixed(2)}`).join(' · ')}</dd></div>
             <div className="sprint3-order-total"><dt>Total before tax</dt><dd>${total.toFixed(2)}</dd></div>
           </dl>
-          <form onSubmit={(event) => {
-            event.preventDefault();
-            setCheckoutStep('payment');
-          }}>
+          <form onSubmit={continueToPayment}>
+            {validationError && <p role="alert" className="registration-error">{validationError}</p>}
             <label className="sprint3-email-label">
               Confirmation email *
               <input type="email" required maxLength="255" value={checkoutEmail} onChange={(event) => setCheckoutEmail(event.target.value)} />
@@ -308,7 +331,7 @@ export default function BookingPage() {
             <p className="registration-intro">Confirm your account email or enter another address for this checkout.</p>
             <div className="sprint3-checkout-actions">
               {!checkoutReserved && <button type="button" className="ces-back-btn" onClick={() => setCheckoutStep('seats')}>Back to seats</button>}
-              <button type="submit" className="registration-submit">Continue to Payment</button>
+              <button type="submit" disabled={reservingSeats} className="registration-submit">Continue to Payment</button>
             </div>
           </form>
           {!currentUser && <p className="registration-intro">Sign in is required before checkout can continue.</p>}

@@ -84,6 +84,10 @@ export default function AdminPortalPage({ user, onLogout }) {
     };
   }, []);
 
+  const availableRooms = showrooms.filter((room) => !showtimes.some((show) =>
+    show.roomId === room.roomId && show.dateTime.slice(0, 16) === scheduleForm.dateTime
+  ));
+
   async function loadAdminData() {
     setLoading(true);
     setError('');
@@ -221,8 +225,8 @@ export default function AdminPortalPage({ user, onLogout }) {
                 </select>
               </label>
               <label className="sprint3-full-width">Description *<textarea required rows="3" value={movieForm.description} onChange={(event) => setMovieForm({ ...movieForm, description: event.target.value })} /></label>
-              <label>Poster URL<input type="url" maxLength="500" value={movieForm.posterUrl} onChange={(event) => setMovieForm({ ...movieForm, posterUrl: event.target.value })} /></label>
-              <label>Trailer URL<input type="url" maxLength="500" value={movieForm.trailerUrl} onChange={(event) => setMovieForm({ ...movieForm, trailerUrl: event.target.value })} /></label>
+              <label>Poster URL<input type="url" pattern="https?://.+" title="Enter an HTTP or HTTPS URL" maxLength="500" value={movieForm.posterUrl} onChange={(event) => setMovieForm({ ...movieForm, posterUrl: event.target.value })} /></label>
+              <label>Trailer URL<input type="url" pattern="https?://.+" title="Enter an HTTP or HTTPS URL" maxLength="500" value={movieForm.trailerUrl} onChange={(event) => setMovieForm({ ...movieForm, trailerUrl: event.target.value })} /></label>
               <label>Director<input maxLength="255" value={movieForm.director} onChange={(event) => setMovieForm({ ...movieForm, director: event.target.value })} /></label>
               <label>Producer<input maxLength="255" value={movieForm.producer} onChange={(event) => setMovieForm({ ...movieForm, producer: event.target.value })} /></label>
               <label className="sprint3-full-width">Cast<input value={movieForm.cast} onChange={(event) => setMovieForm({ ...movieForm, cast: event.target.value })} /></label>
@@ -244,16 +248,17 @@ export default function AdminPortalPage({ user, onLogout }) {
                   {movies.map((movie) => <option key={movie.movieId} value={movie.movieId}>{movie.title}</option>)}
                 </select>
               </label>
+              <label className="sprint3-full-width">Date and time *
+                <input required type="datetime-local" min={localDateTimeMinimum()} value={scheduleForm.dateTime} onChange={(event) => setScheduleForm({ ...scheduleForm, dateTime: event.target.value, roomId: '' })} />
+              </label>
               <label>Showroom *
                 <select required value={scheduleForm.roomId} onChange={(event) => setScheduleForm({ ...scheduleForm, roomId: event.target.value })}>
                   <option value="">Choose a showroom</option>
-                  {showrooms.map((room) => <option key={room.roomId} value={room.roomId}>{room.name} ({room.capacity} seats)</option>)}
+                  {availableRooms.map((room) => <option key={room.roomId} value={room.roomId}>{room.name} ({room.capacity} seats)</option>)}
                 </select>
               </label>
-              <label className="sprint3-full-width">Date and time *
-                <input required type="datetime-local" min={localDateTimeMinimum()} value={scheduleForm.dateTime} onChange={(event) => setScheduleForm({ ...scheduleForm, dateTime: event.target.value })} />
-              </label>
-              <button className="registration-submit sprint3-full-width" type="submit" disabled={submitting || !movies.length || !showrooms.length}>
+              {scheduleForm.dateTime && !availableRooms.length && <p role="status">All showrooms are scheduled at this time. Choose another time.</p>}
+              <button className="registration-submit sprint3-full-width" type="submit" disabled={submitting || !movies.length || !availableRooms.length}>
                 {submitting ? 'Scheduling…' : 'Add Showtime'}
               </button>
             </form>

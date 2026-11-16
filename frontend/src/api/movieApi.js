@@ -1,5 +1,5 @@
 // API Client for Cinema E-Booking System Backend
-const BASE_URL = 'http://localhost:8080/api/movies';
+const BASE_URL = `${import.meta.env.VITE_API_BASE_URL || ''}/api/movies`;
 
 // Seed data fallback from database/cinema_db.sql
 export const FALLBACK_MOVIES = [

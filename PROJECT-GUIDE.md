@@ -17,8 +17,8 @@ to opted-in active customers. User management is not implemented in this sprint.
 Customers can select scheduled shows, ticket
 categories, and available seats; proceed through a login-preserving checkout
 summary; confirm an email address; and view the mock payment page. Orders are
-not finalized. Seats become unavailable for the showtime when checkout begins
-and remain unavailable until manually reset; automatic release is not included.
+not finalized. The server holds selected seats for the session through login and checkout.
+Changing the selection or ending the session releases the corresponding holds.
 
 ## Requirements
 
