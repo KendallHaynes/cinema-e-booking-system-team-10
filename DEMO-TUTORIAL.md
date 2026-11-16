@@ -1,7 +1,7 @@
 # Cinema E-Booking System Demo Tutorial
 
 This guide prepares the local database before the presentation so the demo
-accounts and sample profile data are already available when the demo begins.
+admin account is available when the demo begins.
 The demo seeder is opt-in and does not run during a normal backend start.
 
 ## Demo accounts
@@ -9,12 +9,10 @@ The demo seeder is opt-in and does not run during a normal backend start.
 | Account | Email | Demo data |
 |---|---|---|
 | Admin | `kndllhaynes@gmail.com` | Admin role |
-| Favorite customer | `kch55499@uga.edu` | Verified customer with a saved movie favorite |
-| Card customer | `kendallhaynes7730@gmail.com` | Verified customer with a profile address and up to three saved cards |
 
-All three accounts use the shared demo password you selected. It is not
-written in this file or stored in source control. Enter it when prompted during
-the setup below.
+The admin password is entered locally at a hidden prompt. It is not written in
+this file or stored in source control. Customer accounts are not seeded; create
+them through the registration page.
 
 ## Prepare demo data
 
@@ -36,7 +34,7 @@ with seeding enabled, waits for the seed to complete, then starts it normally.
 3. Wait for this message in the backend output:
 
    ```text
-   Demo data is ready
+   Demo admin account is ready.
    ```
 
    If startup reports an error instead, do not continue to the demo. Resolve
@@ -65,46 +63,56 @@ with seeding enabled, waits for the seed to complete, then starts it normally.
 
 ## What the seeder does
 
-- Creates the three accounts if their email addresses are new.
-- Updates matching accounts to the requested demo names, roles, active customer
-  status, and shared password. Passwords are stored as BCrypt hashes.
-- Makes both customer accounts verified/active; they do not need email
-  confirmation to sign in.
-- Adds a movie to the favorite user's favorites, if one is not already saved.
-- Creates a demo address for the card account only if it does not already have
-  one.
-- Adds fake, demo-only payment-card test values until the card account has
-  three cards. New card numbers are encrypted with the configured local
-  payment-card encryption key.
+- Creates the admin account if it does not exist.
+- Updates the matching admin account's name, role, and password if it already
+  exists. Passwords are stored as BCrypt hashes.
+- Ensures every movie in the catalog has three future showtimes with seat
+  maps, using the configured demo auditoriums.
+- Does not seed customer accounts, favorites, addresses, or payment cards.
 
-The seeder is safe to rerun: it does not duplicate the favorite or add cards
-past the three-card limit. It preserves any existing address and saved cards.
-Therefore, if the card account already has saved cards, those are retained and
-only missing card slots are filled. Never use real payment-card numbers in
-this demo.
+Because seeding updates the admin password each time it runs, keep
+`DEMO_SEED_ENABLED` enabled only for the one-time setup. Never enable this
+seeder against a public or production database.
 
 ## Sign in during the demo
 
 1. Open the frontend and choose **Login**.
-2. Sign in with one of the emails in the account table and the shared demo
-   password.
-3. The admin account opens the admin portal. The two customer accounts open
-   the customer experience; use **Favorites** to show the saved movie or
-   **My Profile** to show the address and saved cards.
+2. Sign in with the admin email and the password you entered during seeding.
+3. Register a customer account through the website if you also want to
+   demonstrate the customer experience.
 
-The admin portal is a navigation prototype; its management sections are not
-fully implemented.
+## Demonstrate Sprint 3
+
+1. Sign in with the admin account and open **Manage Movies**. Add a movie with
+   its required title, genre, description, and status; verify it appears in the
+   catalog.
+2. Open **Manage Showtimes**, choose a movie, showroom, and future date/time,
+   then schedule it. The sample data includes three auditoriums; attempt to
+   schedule the same showroom at the same time to demonstrate conflict
+   validation.
+3. Sign in as a customer, open a movie with an upcoming screening, and choose a
+   showtime. Change adult/child/senior quantities, select the matching number
+   of available seats, and verify booked seats are disabled.
+4. Proceed to checkout. If signed out, log in and confirm the selection is
+   still present. Review the order summary, confirm or change the email, and
+   continue to the mock payment page.
+5. To demonstrate the optional promotion bonus, register and verify a
+   customer account with **Email me about promotions** checked, configure a
+   working SMTP server, and create a promotion in **Manage Promotions**.
+   Confirm the admin sees the recipient/failure counts and that only active,
+   subscribed accounts receive the message.
+
+Proceeding to checkout marks the selected seats unavailable for that
+showtime. These reservations persist and are not automatically released;
+reset them in the database after the demo if you need to reuse seats. The
+payment page is non-functional and does not process payment or finalize an
+order.
 
 ## Troubleshooting
 
-- **Login fails:** Confirm the seeder printed `Demo data is ready`, that you
-  entered the same password at the hidden prompt, and that you started the
+- **Login fails:** Confirm the seeder printed `Demo admin account is ready`,
+  you entered the same password at the hidden prompt, and you started the
   backend normally after seeding.
-- **Favorite list is empty:** The database needs at least one movie. Confirm
-  the movies are present in the database, then rerun the seeder.
-- **Fewer than three cards appear:** Check the backend startup output for a
-  card-encryption or database error. The local encryption key must remain
-  configured and must not be changed after cards are encrypted.
 - **Seeder starts on every backend launch:** Check that `DEMO_SEED_ENABLED`
   was unset and that `DEMO_SEED_ENABLED=true` is not permanently set in the
   shell, IDE launch configuration, or environment.

@@ -13,6 +13,7 @@ import {
   removeFavoriteMovie,
   verifyAdminSession
 } from '../api/authApi';
+import { reserveShowtimeSeats } from '../api/showtimeApi';
 
 const MovieContext = createContext();
 
@@ -38,6 +39,13 @@ export function MovieProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [selectedShowtime, setSelectedShowtime] = useState(null);
+  const [ticketCounts, setTicketCounts] = useState({ adult: 1, child: 0, senior: 0 });
+  const [selectedSeats, setSelectedSeats] = useState([]);
+  const [checkoutStep, setCheckoutStep] = useState('seats');
+  const [checkoutEmail, setCheckoutEmail] = useState('');
+  const [checkoutLoginPending, setCheckoutLoginPending] = useState(false);
+  const [checkoutReserved, setCheckoutReserved] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
 
   // Modals
   const [filterModalOpen, setFilterModalOpen] = useState(false);
@@ -238,8 +246,42 @@ export function MovieProvider({ children }) {
   const openBooking = (movie, showtime) => {
     setSelectedMovie(movie);
     setSelectedShowtime(showtime);
+    setTicketCounts({ adult: 1, child: 0, senior: 0 });
+    setSelectedSeats([]);
+    setCheckoutStep('seats');
+    setCheckoutEmail(currentUser?.email || '');
+    setCheckoutReserved(false);
+    setCheckoutError('');
     setActivePage('booking');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const reserveCheckoutSelection = useCallback(async () => {
+    if (!selectedShowtime || selectedSeats.length === 0) {
+      throw new Error('Select seats before proceeding to checkout.');
+    }
+    const ticketCount = Object.values(ticketCounts).reduce((total, count) => total + count, 0);
+    await reserveShowtimeSeats(selectedShowtime.showId, selectedSeats, ticketCount);
+    setCheckoutReserved(true);
+  }, [selectedShowtime, selectedSeats, ticketCounts]);
+
+  const beginCheckout = async () => {
+    setCheckoutError('');
+    if (!currentUser) {
+      setCheckoutLoginPending(true);
+      navigateLogin();
+      return false;
+    }
+    try {
+      await reserveCheckoutSelection();
+      setCheckoutEmail(currentUser.email || '');
+      setCheckoutStep('summary');
+      return true;
+    } catch (error) {
+      const message = error.message || 'Could not reserve those seats.';
+      setCheckoutError(message);
+      return false;
+    }
   };
 
   const navigateHome = () => {
@@ -267,7 +309,24 @@ export function MovieProvider({ children }) {
       await verifyAdminSession();
     }
     setCurrentUser(user);
-    setActivePage(user.role === 'ADMIN' ? 'admin-portal' : 'home');
+    if (user.role === 'ADMIN') {
+      setCheckoutLoginPending(false);
+      setActivePage('admin-portal');
+    } else if (checkoutLoginPending) {
+      setCheckoutLoginPending(false);
+      setActivePage('booking');
+      try {
+        await reserveCheckoutSelection();
+        setCheckoutEmail(user.email || '');
+        setCheckoutStep('summary');
+        setCheckoutError('');
+      } catch (error) {
+        setCheckoutStep('seats');
+        setCheckoutError(error.message || 'Could not reserve those seats. Please select available seats and try again.');
+      }
+    } else {
+      setActivePage('home');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -322,6 +381,18 @@ export function MovieProvider({ children }) {
         activePage,
         selectedMovie,
         selectedShowtime,
+        ticketCounts,
+        setTicketCounts,
+        selectedSeats,
+        setSelectedSeats,
+        checkoutStep,
+        setCheckoutStep,
+        checkoutEmail,
+        setCheckoutEmail,
+        checkoutReserved,
+        checkoutError,
+        setCheckoutError,
+        beginCheckout,
         openMovieDetail,
         openBooking,
         navigateHome,

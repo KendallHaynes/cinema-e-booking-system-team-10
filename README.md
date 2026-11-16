@@ -1,8 +1,9 @@
 # Cinema E-Booking System
 
-A React/Vite frontend, Spring Boot REST API, and MySQL database for browsing
-movies and demonstrating customer registration, authentication, account
-profiles, favorites, and an admin landing-page prototype.
+A React/Vite frontend, Spring Boot REST API, and MySQL database for movie
+browsing, authenticated admin movie/showtime/promotion management, and a
+customer booking flow through a mock payment page, alongside registration,
+profiles, favorites, and subscriber-only promotion emails.
 
 ## Requirements
 
@@ -15,22 +16,48 @@ profiles, favorites, and an admin landing-page prototype.
 ### 1. Create the database
 
 Back up any existing database before changing its schema. To create a fresh
-development database and seed movies:
+development database and seed movies, run this once only on a new/empty local
+database:
 
 ```sh
 mysql -u root -p < database/cinema_db.sql
 ```
 
-For an existing database with legacy registration columns, review
+For an existing database, back it up and run
+[`database/migrate_sprint3.sql`](./database/migrate_sprint3.sql) once to add
+showroom-specific seat layouts and demo showtimes. If that database also has
+legacy registration columns, review and run
 [`database/migrate_registration_columns.sql`](./database/migrate_registration_columns.sql)
-and run it once after backing up the database.
+as described in that migration's instructions.
 
 ### 2. Configure and run the backend
 
-The backend uses `cinema_db_schema` by default. Configure database connection
-and SMTP settings in a local `backend/src/main/resources/application.properties`
-file or through environment variables. Do not commit credentials, SMTP app
-passwords, encryption keys, or database dumps.
+The backend uses `cinema_db_schema` by default. Use
+`backend/src/main/resources/application-example.properties` as the template for
+your local, Git-ignored `backend/src/main/resources/application.properties`.
+If the local file does not exist yet, copy the template (do not overwrite an
+existing local configuration):
+
+```sh
+cp backend/src/main/resources/application-example.properties backend/src/main/resources/application.properties
+```
+
+Set your MySQL connection details there and configure SMTP for email
+verification and promotion email. The template supports `SMTP_HOST`,
+`SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_AUTH`, `SMTP_STARTTLS`,
+`APP_MAIL_FROM`, `APP_FRONTEND_URL`, and `DB_URL`/`DB_USERNAME`/`DB_PASSWORD`.
+For local email testing, install and start Mailpit in another terminal:
+
+```sh
+brew install mailpit
+mailpit --listen 127.0.0.1:8025 --smtp 127.0.0.1:1025
+```
+
+Open `http://127.0.0.1:8025` to view messages. The example configuration uses
+Mailpit by default; Gmail setup is documented in the
+[backend guide](./backend/README.md).
+Never commit database credentials, SMTP passwords, encryption keys, or database
+dumps.
 
 Payment-card encryption requires a stable, private AES-256 key. For local
 development, store the key in the Git-ignored
@@ -43,7 +70,7 @@ it in a password manager:
 openssl rand -base64 32
 ```
 
-Then either set the saved value in the backend process environment:
+Then start MySQL and the backend. In Terminal 1, from the repository root:
 
 ```sh
 cd backend
@@ -54,13 +81,13 @@ export PAYMENT_CARD_ENCRYPTION_KEY
 ```
 
 Keep the same key across restarts. Losing it makes encrypted card numbers
-unrecoverable. The backend runs at `http://localhost:8080`. Email verification,
-password reset, and profile-change notifications need a working SMTP server.
-See the [backend guide](./backend/README.md) for Gmail and local Mailpit setup.
+unrecoverable. The backend runs at `http://localhost:8080`. Keep this terminal
+running. Registration, verification, password reset, and promotion-email
+delivery require a working SMTP server.
 
 ### 3. Run the frontend
 
-In another terminal:
+In Terminal 2, from the repository root:
 
 ```sh
 cd frontend
@@ -68,8 +95,47 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints (normally `http://localhost:5173`). The Vite dev
-server proxies `/api` requests to the backend so browser session cookies work.
+Open the URL Vite prints (normally `http://localhost:5173`). Keep this terminal
+running. The Vite dev server proxies `/api` requests to the backend so browser
+session cookies work.
+
+### 4. Seed the local demo admin and showtimes (opt-in)
+
+The demo seeder is disabled during normal starts. To create/update the local
+admin and ensure every movie in the catalog has three future showtimes with
+seat maps:
+
+1. Stop the normal backend with **Control+C** in Terminal 1.
+2. In that same terminal, run:
+
+   ```sh
+   read -rs "DEMO_SEED_PASSWORD?Set the demo admin password (input hidden): "
+   printf '\n'
+   export DEMO_SEED_PASSWORD
+   export DEMO_SEED_ENABLED=true
+   ./mvnw spring-boot:run
+   ```
+
+3. Wait for `Demo admin account is ready.` The seed operation uses the
+   configured database, rooms, and seat layouts. It does not seed customer
+   accounts; create customers through website registration.
+4. Stop the backend with **Control+C** and disable the seeder:
+
+   ```sh
+   unset DEMO_SEED_PASSWORD DEMO_SEED_ENABLED
+   ```
+
+5. Start the backend normally again:
+
+   ```sh
+   ./mvnw spring-boot:run
+   ```
+
+The admin email is `kndllhaynes@gmail.com`; use the password entered at the
+hidden prompt. Enabling the seeder resets that admin password on every run.
+Use it only with a local/demo database. The sample showtimes are scheduled
+across the three demo auditoriums; newly added movies also receive demo
+showtimes the next time the opt-in seeder runs.
 
 ## Account and profile features
 
@@ -129,51 +195,59 @@ WHERE email = 'admin@example.com';
 ```
 
 Only trusted developers should run these statements. Do not use manual SQL role
-changes as a production admin-management process. The admin portal is a
-navigation prototype; the listed management sections do not yet implement
-admin operations.
+changes as a production admin-management process. Admins can add movies,
+schedule future showtimes, and create promotions from the Admin Portal.
+User management remains out of scope.
 
-## Preparing the demo accounts
+## Sprint 3 movie, showtime, and booking flow
 
-The backend includes an opt-in demo seeder. It creates or updates these local
-accounts before a demo:
+The Admin Portal provides validated movie creation and showtime scheduling.
+Showtimes must be in the future, use a configured showroom, and cannot duplicate
+the same showroom/date/time. The fresh database script and the Sprint 3
+migration provide three demo auditoriums with 6-by-8 seat layouts and sample
+screenings.
 
-- Admin: `kndllhaynes@gmail.com` (`Kendall Admin`)
-- Verified favorite user: `kch55499@uga.edu` (`Kendall Favorite`), with a movie
-  already saved to favorites
-- Verified card user: `kendallhaynes7730@gmail.com` (`Kendall Card`), with an
-  address and three saved cards (missing cards are filled with encrypted,
-  demo-only test numbers)
+Customers select a movie and database-backed showtime, choose ticket quantities
+and available seats, then continue to checkout. Checkout requires a signed-in
+customer; the current booking selection remains in the browser during login.
+When the customer proceeds to checkout, the backend marks the selected seats
+unavailable for that showtime. These demo reservations remain unavailable until
+reset in the database; no automatic release is implemented.
+The order summary shows movie, showtime, seat labels, ticket types/prices, and
+the total before tax. Customers can confirm or change the email for this
+checkout before viewing the mock payment-processing page. No payment is
+processed and no final booking confirmation is issued.
 
-The same password is set for all three accounts using the
-`DEMO_SEED_PASSWORD` environment variable. The seeder is disabled by default.
-Run the backend once with demo seeding enabled before the presentation; it is
-idempotent and can be run again without duplicating favorites or adding cards
-past the three-card limit. Existing matching accounts are updated to the demo
-names, roles, active status, and password. Existing addresses and saved cards
-are preserved; fake test cards are added until the account has three cards.
+### Promotions and subscribed-customer email
 
-On macOS, enter the password without placing it in shell history:
+In the Admin Portal, open **Manage Promotions** and submit a promotion name,
+discount percentage (greater than 0 and at most 100), start date, and end date.
+The server validates all fields and date ordering, saves the promotion, and
+sends a notification only to active customer accounts that opted in to
+promotion email during registration. The result reports how many messages were
+sent and how many failed. Configure working SMTP before demonstrating this
+feature. Unsubscribed and inactive accounts are not recipients.
 
-```sh
-cd backend
-read -rs "DEMO_SEED_PASSWORD?Demo account password (input hidden): "
-printf '\n'
-export DEMO_SEED_PASSWORD
-export DEMO_SEED_ENABLED=true
-./mvnw spring-boot:run
-```
+## Deliverable 6 requirements review
 
-Wait for the backend to report that demo data is ready. Stop it with
-`Control+C`, then unset the temporary environment variables:
+| Requirement | Implementation / demo check |
+|---|---|
+| Admin home menu and navigation | Manage Movies, Manage Promotions, Manage Users, and Manage Showtimes are available. User management is informational because it is explicitly not required. |
+| Add movie and validation | Admin form validates required title, genre, status, and description; the admin API validates and persists the movie. Verify it appears in the customer catalog. |
+| Schedule showtime and prevent conflicts | Admin selects a movie, future date/time, and showroom. Server rejects a duplicate showroom/date/time; each configured showroom must have seats. |
+| Three showrooms and seed data | Fresh SQL setup provides three 6-by-8 demo auditoriums. Opt-in backend seeding gives every catalog movie at least three future showtimes with seat maps. |
+| Promotion bonus | Required name, 0.01–100% discount, and date range are validated and saved. Email is sent only to active users whose promotion preference is enabled; the result reports send failures. |
+| Showtime visibility and booking | Customer movie pages load future showtimes from MySQL. Customer selects adult/child/senior quantities and an equal number of available seats. |
+| Seat selection and checkout/login | Guests can select seats. Proceeding to checkout requires customer login and preserves the selection through login. The server verifies availability and ticket count, then marks those seats unavailable for that showtime. |
+| Order summary and email | Summary includes movie, showtime, seats, ticket counts/types, per-ticket prices, and pre-tax total. It starts with the account email and lets the customer confirm or change it before continuing. |
+| Payment page | Displays a payment-processing mockup only. It does not collect card data, process payments, or finalize bookings. |
+| Architecture, validation, and test readiness | React UI, REST controllers, services, repositories, and MySQL follow a layered architecture. Validation is client- and server-side; backend unit tests cover scheduling, reservations, and seeding. Use the invalid showtime conflict and seat-already-taken paths in the demo. |
 
-```sh
-unset DEMO_SEED_PASSWORD DEMO_SEED_ENABLED
-```
-
-Start the backend normally afterward. Never use real payment-card numbers in
-the demo; the seeded cards are test values and are encrypted using the local
-card-encryption key.
+**Reservation behavior note:** The rubric describes a session reservation and
+does not require real-time locking. As requested, this implementation instead
+persists unavailable seats at checkout so other customers see them as booked.
+No automatic release is implemented; reset demo reservations manually when
+reusing the same seat map.
 
 ## Database and backend references
 
@@ -185,7 +259,12 @@ card-encryption key.
 The API uses `/api/auth` for registration, verification, login, logout, current
 session, and password reset; `/api/profile` for protected profile, card, and
 password updates; `/api/favorites` for protected favorites; `/api/admin/session`
-to verify an administrator role; and `/api/movies` for the movie catalog.
+to verify an administrator role; `/api/movies/admin` for admin-only movie
+creation; `/api/showrooms` and `/api/showtimes` for showtime/seat data;
+`POST /api/showtimes/admin` for admin-only scheduling;
+authenticated `POST /api/showtimes/{showId}/reserve` for checkout seat
+reservations; and `POST /api/promotions/admin` for admin-only promotion
+creation and subscriber email delivery.
 
 ## Verification
 
@@ -210,6 +289,9 @@ npm run build
   key storage outside local development.
 - Do not use real payment cards in this demo. Application-level encryption
   does not make the project a payment processor or PCI-compliant card vault.
-- The admin page is a prototype, not a complete administration system.
-- Booking, payment processing, promotions, and working admin-management tools
-  remain outside the current implemented scope.
+- User management is not required for this sprint.
+- Promotion emails require recipients to be active and have opted in to
+  promotions; delivery failures are reported in the Admin Portal.
+- The payment page is a mockup: no payment is processed and no booking is
+  finalized. Seats are marked unavailable when checkout begins and remain so
+  until manually reset in the database.

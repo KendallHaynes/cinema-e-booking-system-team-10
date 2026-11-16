@@ -1,16 +1,34 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMovieContext } from '../context/MovieContext';
-
-const HARDCODED_SHOWTIMES = [
-  '2:00 PM',
-  '5:00 PM',
-  '8:00 PM',
-  '10:15 PM'
-];
+import { getShowtimes } from '../api/showtimeApi';
 
 export default function MovieDetailPage() {
   const { selectedMovie, navigateHome, openBooking, isFavorite, toggleFavorite } = useMovieContext();
   const [imgError, setImgError] = useState(false);
+  const [showtimeResult, setShowtimeResult] = useState({ movieId: null, showtimes: [], error: '' });
+  const selectedMovieId = selectedMovie?.movieId;
+
+  useEffect(() => {
+    if (!selectedMovieId) return undefined;
+    let ignore = false;
+    const movieId = selectedMovieId;
+    getShowtimes(movieId)
+      .then((results) => {
+        if (!ignore) setShowtimeResult({ movieId, showtimes: results, error: '' });
+      })
+      .catch((error) => {
+        if (!ignore) {
+          setShowtimeResult({
+            movieId,
+            showtimes: [],
+            error: error.message || 'Could not load showtimes.'
+          });
+        }
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [selectedMovieId]);
 
   if (!selectedMovie) {
     return (
@@ -25,6 +43,9 @@ export default function MovieDetailPage() {
 
   const favorited = isFavorite(selectedMovie.movieId);
   const isCurrentlyRunning = selectedMovie.status === 'CURRENTLY_RUNNING';
+  const showtimesLoading = showtimeResult.movieId !== selectedMovie.movieId;
+  const showtimesError = showtimeResult.movieId === selectedMovie.movieId ? showtimeResult.error : '';
+  const showtimes = showtimeResult.movieId === selectedMovie.movieId ? showtimeResult.showtimes : [];
 
   const posterSrc = imgError || !selectedMovie.posterUrl
     ? 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80'
@@ -133,45 +154,42 @@ export default function MovieDetailPage() {
         </div>
       </section>
 
-      {isCurrentlyRunning && (
-        <section className="detail-showtimes-section">
+      <section className="detail-showtimes-section">
           <div className="section-title-bar">
             <div>
               <h2 className="section-title">Available Showtimes</h2>
               <p className="section-subtitle">
-                Select a showtime to proceed to seat selection & booking
+                Select a scheduled screening to continue to seat selection
               </p>
             </div>
           </div>
 
+          {showtimesLoading && <p>Loading showtimes…</p>}
+          {showtimesError && <p className="registration-error" role="alert">{showtimesError}</p>}
+          {!showtimesLoading && !showtimesError && showtimes.length === 0 && (
+            <p>No upcoming showtimes are scheduled for this movie yet.</p>
+          )}
           <div className="showtimes-grid">
-            {HARDCODED_SHOWTIMES.map((showtime) => (
-              <div
-                key={showtime}
-                className="showtime-card"
-                onClick={() => openBooking(selectedMovie, showtime)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') openBooking(selectedMovie, showtime);
-                }}
-              >
-                <div className="showtime-time">{showtime}</div>
+            {showtimes.map((showtime) => (
+              <article key={showtime.showId} className="showtime-card">
+                <div className="showtime-time">
+                  {new Date(showtime.dateTime).toLocaleString(undefined, {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                  })}
+                </div>
+                <p>{showtime.roomName}</p>
                 <button
                   type="button"
                   className="ces-btn btn-primary btn-sm showtime-book-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openBooking(selectedMovie, showtime);
-                  }}
+                  onClick={() => openBooking(selectedMovie, showtime)}
                 >
                   Select Seats →
                 </button>
-              </div>
+              </article>
             ))}
           </div>
         </section>
-      )}
     </div>
   );
 }

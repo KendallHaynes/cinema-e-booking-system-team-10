@@ -12,7 +12,7 @@ async function request(path, options = {}) {
 
   const data = response.status === 204 ? {} : await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (response.status === 409) {
+    if (response.status === 409 && path === '/api/auth/register') {
       throw new Error('An account with this email already exists. Try signing in or use a different email address.');
     }
     throw new Error(data.detail || data.message || `The request could not be completed (HTTP ${response.status}).`);
@@ -50,6 +50,18 @@ export function getCurrentUser() {
 
 export function verifyAdminSession() {
   return request('/api/admin/session');
+}
+
+export function createMovie(details) {
+  return post('/api/movies/admin', details);
+}
+
+export function scheduleShowtime(details) {
+  return post('/api/showtimes/admin', details);
+}
+
+export function createPromotion(details) {
+  return post('/api/promotions/admin', details);
 }
 
 export function logoutAccount() {

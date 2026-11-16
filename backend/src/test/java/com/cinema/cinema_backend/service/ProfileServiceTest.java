@@ -124,10 +124,29 @@ class ProfileServiceTest {
         when(addressRepository.findByUser_UserId(1L)).thenReturn(Optional.empty());
         when(paymentCardRepository.findAllByUser_UserIdOrderByCardId(1L)).thenReturn(List.of());
 
-        profileService.updateProfile(1L, new ProfileUpdateRequest("Alex", "Customer", null));
+        profileService.updateProfile(1L, new ProfileUpdateRequest("Alex", "Customer", null, false));
 
         assertEquals("Alex", user.getFirstName());
         verify(userRepository).save(user);
         verify(mailSender).send(any(SimpleMailMessage.class));
+    }
+
+    @Test
+    void promotionPreferenceCanBeChangedFromProfileWithoutSecurityEmail() {
+        User user = new User("Taylor", "Customer", "taylor@example.com", "hash", false, "CUSTOMER", "ACTIVE");
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(addressRepository.findByUser_UserId(1L)).thenReturn(Optional.empty());
+        when(paymentCardRepository.findAllByUser_UserIdOrderByCardId(1L)).thenReturn(List.of());
+
+        var profile = profileService.updateProfile(
+                1L,
+                new ProfileUpdateRequest("Taylor", "Customer", null, true)
+        );
+
+        assertEquals(true, user.getPromotions());
+        assertEquals(true, profile.promotions());
+        verify(userRepository).save(user);
+        verify(mailSender, never()).send(any(SimpleMailMessage.class));
     }
 }

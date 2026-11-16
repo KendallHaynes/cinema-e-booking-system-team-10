@@ -264,3 +264,25 @@ The database supports movie browsing and defines tables for:
 - Favorites
 - Promotions
 - Users and showrooms
+
+## Sprint 3 setup
+
+The fresh database script creates three demo auditoriums, each with a
+6-by-8 seat layout, and schedules three sample showtimes for The Batman on the
+following day. Sample seat maps mark several seats unavailable so the demo can
+show booked-seat behavior. For an existing database, back it up and run
+[`migrate_sprint3.sql`](./migrate_sprint3.sql). The migration adds showroom
+ownership to seats if missing and inserts the same demo rooms, layouts, and
+showtimes. It can be safely rerun if it stops partway through.
+
+When the opt-in backend demo seeder is enabled, it also ensures every movie in
+the catalog has three future showtimes and corresponding seat maps. The three
+demo showrooms and their seat layouts must exist first.
+
+Admins can add movies and schedule further showtimes from the Admin Portal.
+Customers see future scheduled showtimes on each movie page and can continue
+through seat selection, checkout summary, and the mock payment page. A show
+cannot be scheduled in the same showroom at an already-used date and time.
+Proceeding to checkout marks selected seats unavailable for that showtime.
+These demo reservations remain unavailable until manually reset; the mock
+payment page does not process payment or finalize an order.

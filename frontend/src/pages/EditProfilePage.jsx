@@ -27,6 +27,7 @@ export default function EditProfilePage({ onBack, onSessionExpired }) {
     firstName: '',
     lastName: '',
     email: '',
+    promotions: false,
     address: { ...EMPTY_ADDRESS }
   });
   const [cardNumber, setCardNumber] = useState('');
@@ -50,6 +51,7 @@ export default function EditProfilePage({ onBack, onSessionExpired }) {
           firstName: data.firstName,
           lastName: data.lastName,
           email: data.email,
+          promotions: data.promotions === true,
           address: data.address || { ...EMPTY_ADDRESS }
         });
       })
@@ -92,6 +94,7 @@ export default function EditProfilePage({ onBack, onSessionExpired }) {
       const updatedProfile = await saveProfile({
         firstName: form.firstName,
         lastName: form.lastName,
+        promotions: form.promotions,
         address: hasAddress ? form.address : null
       });
       setProfile(updatedProfile);
@@ -99,9 +102,10 @@ export default function EditProfilePage({ onBack, onSessionExpired }) {
         ...previous,
         firstName: updatedProfile.firstName,
         lastName: updatedProfile.lastName,
+        promotions: updatedProfile.promotions === true,
         address: updatedProfile.address || { ...EMPTY_ADDRESS }
       }));
-      setMessage('Your profile was saved. A security email is sent when personal information changes.');
+      setMessage('Your profile was saved. A security email is sent when your personal information changes.');
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -230,6 +234,17 @@ export default function EditProfilePage({ onBack, onSessionExpired }) {
               Email address <span className="profile-help">(cannot be changed)</span>
               <input type="email" value={form.email} readOnly aria-readonly="true" />
             </label>
+
+            <label className="registration-checkbox">
+              <input
+                type="checkbox"
+                name="promotions"
+                checked={form.promotions}
+                onChange={(event) => setForm((previous) => ({ ...previous, promotions: event.target.checked }))}
+              />
+              Email me about promotions
+            </label>
+            <p className="profile-help">You can change this preference at any time. Promotion emails are sent only to active customers who opt in.</p>
 
             <fieldset className="profile-address-fields">
               <legend>Mailing address <span className="profile-help">(one address per account; leave blank to keep the current address)</span></legend>

@@ -1,8 +1,8 @@
 # Cinema E-Booking System: Setup and Feature Guide
 
 This guide covers local setup, running the application, account and email
-workflows, profile features, demo preparation, and the changes included in the
-authentication/profile feature branch.
+workflows, profile features, admin movie/showtime management, the customer
+booking flow through its mock payment page, and demo preparation.
 
 ## What is in the project
 
@@ -11,9 +11,14 @@ authentication/profile feature branch.
 - `database/cinema_db.sql`: MySQL schema and movie sample data.
 - `DEMO-TUTORIAL.md`: step-by-step preparation and use of the demo accounts.
 
-The current admin portal is an authenticated navigation prototype. Its menu
-sections do not yet provide working movie, user, promotion, or showtime
-management.
+The authenticated Admin Portal supports adding movies, scheduling future
+showtimes in configured showrooms, and creating promotions with email delivery
+to opted-in active customers. User management is not implemented in this sprint.
+Customers can select scheduled shows, ticket
+categories, and available seats; proceed through a login-preserving checkout
+summary; confirm an email address; and view the mock payment page. Orders are
+not finalized. Seats become unavailable for the showtime when checkout begins
+and remain unavailable until manually reset; automatic release is not included.
 
 ## Requirements
 
@@ -184,21 +189,18 @@ sender to the customer's address instead.
 
 The demo data seeder is disabled during normal starts. Follow
 [`DEMO-TUTORIAL.md`](./DEMO-TUTORIAL.md) to enable it once before the demo. It
-creates or updates these accounts:
+creates or updates this account:
 
 | Account | Email | Preloaded state |
 |---|---|---|
 | Kendall Admin | `kndllhaynes@gmail.com` | Admin role |
-| Kendall Favorite | `kch55499@uga.edu` | Active customer with a saved movie favorite |
-| Kendall Card | `kendallhaynes7730@gmail.com` | Active customer with an address and up to three saved cards |
 
-Enter the shared demo password at the hidden prompt; it is deliberately not
-written in this guide. New seeded cards are fake test values, encrypted with
-the configured key. The seeder preserves existing addresses and cards, avoids
-duplicating the favorite, and will not add more than three cards. The resulting
-database records remain after stopping the seeded backend and starting it
-normally. Disabling the seeder prevents future seed runs; it does not delete
-existing records.
+Enter the admin password at the hidden prompt; it is deliberately not written
+in this guide. Passwords are stored as BCrypt hashes. The seeder does not create
+customer accounts or profile data. It updates the admin password whenever
+seeding is enabled, so disable seeding after the one-time setup. The account
+remains in the database after restarting the backend normally. This setup does
+not delete customer records that may already exist.
 
 ## Admin role for a separately registered account
 
@@ -274,5 +276,8 @@ npm run build
   processor or PCI-compliant card vault.
 - Use HTTPS and secure cookies for deployment, and keep SMTP and encryption
   secrets in a managed secret store.
-- The admin page is a navigation prototype; management operations and booking
-  /payment processing are not implemented as complete backend features.
+- User management is not in scope; promotion creation and opted-in subscriber
+  email are implemented as the optional bonus.
+- The payment page is a mockup only. It does not process a payment, finalize an
+  order. Checkout marks seats unavailable until an admin/developer resets them;
+  automatic expiration is not implemented.

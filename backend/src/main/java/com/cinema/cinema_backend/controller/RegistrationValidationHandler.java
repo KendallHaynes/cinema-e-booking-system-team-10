@@ -14,7 +14,10 @@ import java.util.Map;
         AuthenticationController.class,
         ProfileController.class,
         FavoriteController.class,
-        AdminSessionController.class
+        AdminSessionController.class,
+        MovieController.class,
+        ShowtimeController.class,
+        PromotionController.class
 })
 public class RegistrationValidationHandler {
 
@@ -38,8 +41,14 @@ public class RegistrationValidationHandler {
             message = "Enter a valid card number and expiration date.";
         } else if ("profileUpdateRequest".equals(objectName)) {
             message = "Please complete your required profile fields.";
+        } else if ("createMovieRequest".equals(objectName)) {
+            message = "Enter a title, genre, description, and valid movie status.";
+        } else if ("scheduleShowtimeRequest".equals(objectName)) {
+            message = "Choose a movie, showroom, and valid showtime.";
+        } else if ("createPromotionRequest".equals(objectName)) {
+            message = "Enter a promotion name, a discount from 0.01% to 100%, and valid start and end dates.";
         } else {
-            message = "Please provide a valid first name, last name, email address, and password confirmation.";
+            message = "Please correct the required fields and try again.";
         }
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", message));

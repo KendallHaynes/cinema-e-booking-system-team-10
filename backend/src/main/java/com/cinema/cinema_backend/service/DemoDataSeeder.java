@@ -1,64 +1,61 @@
 package com.cinema.cinema_backend.service;
 
-import com.cinema.cinema_backend.controller.PaymentCardRequest;
-import com.cinema.cinema_backend.model.Favorite;
 import com.cinema.cinema_backend.model.Movie;
-import com.cinema.cinema_backend.model.ProfileAddress;
+import com.cinema.cinema_backend.model.Seat;
+import com.cinema.cinema_backend.model.ShowSeat;
+import com.cinema.cinema_backend.model.Showroom;
+import com.cinema.cinema_backend.model.Showtime;
 import com.cinema.cinema_backend.model.User;
-import com.cinema.cinema_backend.repository.FavoriteRepository;
 import com.cinema.cinema_backend.repository.MovieRepository;
-import com.cinema.cinema_backend.repository.PaymentCardRepository;
-import com.cinema.cinema_backend.repository.ProfileAddressRepository;
+import com.cinema.cinema_backend.repository.SeatRepository;
+import com.cinema.cinema_backend.repository.ShowSeatRepository;
+import com.cinema.cinema_backend.repository.ShowroomRepository;
+import com.cinema.cinema_backend.repository.ShowtimeRepository;
 import com.cinema.cinema_backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.YearMonth;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
 public class DemoDataSeeder implements CommandLineRunner {
 
-    private static final String DEMO_STREET = "100 Demo Street";
-    private static final List<String> TEST_CARD_NUMBERS = List.of(
-            "4242424242424242",
-            "5555555555554444",
-            "378282246310005"
-    );
-
     private final boolean enabled;
     private final String demoPassword;
     private final UserRepository userRepository;
-    private final MovieRepository movieRepository;
-    private final FavoriteRepository favoriteRepository;
-    private final ProfileAddressRepository addressRepository;
-    private final PaymentCardRepository paymentCardRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ProfileService profileService;
+    private final MovieRepository movieRepository;
+    private final ShowroomRepository showroomRepository;
+    private final SeatRepository seatRepository;
+    private final ShowtimeRepository showtimeRepository;
+    private final ShowSeatRepository showSeatRepository;
 
     public DemoDataSeeder(
             @Value("${DEMO_SEED_ENABLED:${app.demo-seed.enabled:false}}") boolean enabled,
             @Value("${DEMO_SEED_PASSWORD:${app.demo-seed.password:}}") String demoPassword,
             UserRepository userRepository,
-            MovieRepository movieRepository,
-            FavoriteRepository favoriteRepository,
-            ProfileAddressRepository addressRepository,
-            PaymentCardRepository paymentCardRepository,
             PasswordEncoder passwordEncoder,
-            ProfileService profileService
+            MovieRepository movieRepository,
+            ShowroomRepository showroomRepository,
+            SeatRepository seatRepository,
+            ShowtimeRepository showtimeRepository,
+            ShowSeatRepository showSeatRepository
     ) {
         this.enabled = enabled;
         this.demoPassword = demoPassword;
         this.userRepository = userRepository;
-        this.movieRepository = movieRepository;
-        this.favoriteRepository = favoriteRepository;
-        this.addressRepository = addressRepository;
-        this.paymentCardRepository = paymentCardRepository;
         this.passwordEncoder = passwordEncoder;
-        this.profileService = profileService;
+        this.movieRepository = movieRepository;
+        this.showroomRepository = showroomRepository;
+        this.seatRepository = seatRepository;
+        this.showtimeRepository = showtimeRepository;
+        this.showSeatRepository = showSeatRepository;
     }
 
     @Override
@@ -74,71 +71,72 @@ public class DemoDataSeeder implements CommandLineRunner {
         }
 
         String passwordHash = passwordEncoder.encode(demoPassword);
-        seedUser("Kendall", "Admin", "kndllhaynes@gmail.com",
-                passwordHash, "ADMIN", null, null);
-        User favoriteUser = seedUser("Kendall", "Favorite", "kch55499@uga.edu",
-                passwordHash, "CUSTOMER", "ACTIVE", false);
-        User cardUser = seedUser("Kendall", "Card", "kendallhaynes7730@gmail.com",
-                passwordHash, "CUSTOMER", "ACTIVE", false);
+        seedUser("Kendall", "Admin", "kndllhaynes@gmail.com", passwordHash);
+        seedDefaultShowtimes();
+        System.out.println("Demo admin account is ready.");
+    }
 
-        addFavoriteIfAvailable(favoriteUser);
-        ensureDemoAddress(cardUser);
-        seedCards(cardUser);
+    private void seedDefaultShowtimes() {
+        List<Movie> movies = movieRepository.findAll(Sort.by("movieId"));
+        if (movies.isEmpty()) {
+            return;
+        }
+        List<Showroom> showrooms = showroomRepository.findAllByOrderByNameAsc();
+        if (showrooms.isEmpty()) {
+            throw new IllegalStateException("Demo showtimes cannot be seeded because no showrooms are configured.");
+        }
+        List<List<Seat>> seatsByRoom = showrooms.stream()
+                .map(room -> seatRepository.findByShowroomRoomIdOrderBySeatRowAscSeatNumberAsc(room.getRoomId()))
+                .toList();
+        if (seatsByRoom.stream().anyMatch(List::isEmpty)) {
+            throw new IllegalStateException("Demo showtimes cannot be seeded because a showroom has no configured seats.");
+        }
 
-        System.out.printf(
-                "Demo data is ready: 1 admin, 2 verified customers, and %d saved cards for the card demo account.%n",
-                paymentCardRepository.countByUser_UserId(cardUser.getUserId())
-        );
+        LocalDate firstShowDate = LocalDate.now().plusDays(1);
+        for (int movieIndex = 0; movieIndex < movies.size(); movieIndex++) {
+            Movie movie = movies.get(movieIndex);
+            int currentShowCount = showtimeRepository
+                    .findByMovieMovieIdAndDateTimeAfterOrderByDateTimeAsc(
+                            movie.getMovieId(),
+                            LocalDateTime.now()
+                    )
+                    .size();
+            int showIndex = 0;
+            while (currentShowCount < 3) {
+                int slot = movieIndex * 3 + showIndex++;
+                int showroomsPerDay = showrooms.size() * 3;
+                int dayOffset = slot / showroomsPerDay + 1;
+                int slotInDay = slot % showroomsPerDay;
+                int roomIndex = slotInDay % showrooms.size();
+                int startHour = 14 + (slotInDay / showrooms.size()) * 3;
+                Showroom showroom = showrooms.get(roomIndex);
+                var dateTime = firstShowDate.plusDays(dayOffset - 1L).atTime(startHour, 0);
+
+                if (showtimeRepository.existsByShowroomRoomIdAndDateTime(showroom.getRoomId(), dateTime)) {
+                    continue;
+                }
+
+                Showtime showtime = showtimeRepository.saveAndFlush(new Showtime(dateTime, movie, showroom));
+                showSeatRepository.saveAll(
+                        seatsByRoom.get(roomIndex).stream()
+                                .map(seat -> new ShowSeat(showtime, seat))
+                                .toList()
+                );
+                currentShowCount++;
+            }
+        }
     }
 
     private User seedUser(
             String firstName,
             String lastName,
             String email,
-            String passwordHash,
-            String userType,
-            String customerStatus,
-            Boolean promotions
+            String passwordHash
     ) {
         User user = userRepository.findByEmail(email).orElseGet(
-                () -> new User(firstName, lastName, email, passwordHash, promotions, userType, customerStatus)
+                () -> new User(firstName, lastName, email, passwordHash, null, "ADMIN", null)
         );
-        user.configureDemoAccount(firstName, lastName, passwordHash, userType, customerStatus, promotions);
+        user.configureDemoAccount(firstName, lastName, passwordHash, "ADMIN", null, null);
         return userRepository.save(user);
-    }
-
-    private void addFavoriteIfAvailable(User user) {
-        Movie movie = movieRepository.findAll().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "Demo seeding needs at least one movie in the database to create the favorite."
-                ));
-        if (!favoriteRepository.existsByUser_UserIdAndMovie_MovieId(user.getUserId(), movie.getMovieId())) {
-            favoriteRepository.save(new Favorite(user, movie));
-        }
-    }
-
-    private void ensureDemoAddress(User user) {
-        if (addressRepository.findByUser_UserId(user.getUserId()).isEmpty()) {
-            addressRepository.save(new ProfileAddress(
-                    user, DEMO_STREET, "Demo City", "GA", "30601", "USA"
-            ));
-        }
-    }
-
-    private void seedCards(User user) {
-        long existingCards = paymentCardRepository.countByUser_UserId(user.getUserId());
-        YearMonth expiration = YearMonth.now().plusYears(2);
-        for (String cardNumber : TEST_CARD_NUMBERS) {
-            if (existingCards >= 3) {
-                return;
-            }
-            profileService.addPaymentCard(user.getUserId(), new PaymentCardRequest(
-                    cardNumber,
-                    expiration.getMonthValue(),
-                    expiration.getYear()
-            ));
-            existingCards++;
-        }
     }
 }

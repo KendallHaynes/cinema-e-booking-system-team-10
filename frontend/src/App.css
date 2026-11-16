@@ -426,6 +426,68 @@
   }
 }
 
+.sprint3-admin-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.sprint3-admin-form label,
+.sprint3-email-label {
+  display: grid;
+  gap: 7px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sprint3-admin-form input,
+.sprint3-admin-form select,
+.sprint3-admin-form textarea,
+.sprint3-email-label input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+}
+
+.sprint3-admin-form textarea {
+  resize: vertical;
+}
+
+.sprint3-admin-form input:focus,
+.sprint3-admin-form select:focus,
+.sprint3-admin-form textarea:focus,
+.sprint3-email-label input:focus {
+  outline: 2px solid var(--border-focus);
+  border-color: var(--accent-gold);
+}
+
+.sprint3-full-width {
+  grid-column: 1 / -1;
+}
+
+.sprint3-showtime-list {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sprint3-showtime-list h3 {
+  margin-bottom: 12px;
+}
+
+.sprint3-showtime-list p {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
 /* ==========================================================================
    Navbar
    ========================================================================== */
@@ -1752,6 +1814,10 @@
   border: 1px solid transparent;
 }
 
+.seat-btn:disabled {
+  cursor: not-allowed;
+}
+
 .seat-available {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.12);
@@ -1783,6 +1849,175 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: -0.01em;
+}
+
+.sprint3-checkout-card {
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+
+.sprint3-checkout-card > h2 {
+  margin-bottom: 20px;
+}
+
+.sprint3-order-details {
+  display: grid;
+  gap: 0;
+  margin: 20px 0 28px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sprint3-order-details > div {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) 2fr;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sprint3-order-details dt {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.sprint3-order-details dd {
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.sprint3-order-total dd {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.sprint3-email-label {
+  max-width: 460px;
+}
+
+.sprint3-checkout-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.sprint3-checkout-actions .registration-submit {
+  padding: 0 20px;
+}
+
+.sprint3-payment-summary {
+  margin: 20px 0;
+  padding: 18px;
+  border-radius: 10px;
+  background: #f8f5f0;
+}
+
+.sprint3-payment-summary p + p {
+  margin-top: 8px;
+}
+
+.sprint3-mock-payment {
+  display: grid;
+  gap: 16px;
+  max-width: 520px;
+  margin: 24px auto;
+  padding: 22px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: #fff;
+  color: #172033;
+}
+
+.sprint3-mock-payment-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sprint3-mock-payment-heading h3,
+.sprint3-mock-payment-heading p {
+  margin: 0;
+}
+
+.sprint3-mock-payment-heading p {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.sprint3-mock-payment-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 22px;
+}
+
+.sprint3-mock-payment label {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sprint3-mock-payment input,
+.sprint3-mock-payment select {
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.sprint3-mock-payment-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.sprint3-mock-payment .registration-submit:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  .booking-layout-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .sprint3-admin-form {
+    grid-template-columns: 1fr;
+  }
+
+  .sprint3-full-width {
+    grid-column: auto;
+  }
+
+  .sprint3-order-details > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .sprint3-order-details dd {
+    text-align: left;
+  }
+
+  .sprint3-checkout-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sprint3-mock-payment-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Seats Legend Bar */

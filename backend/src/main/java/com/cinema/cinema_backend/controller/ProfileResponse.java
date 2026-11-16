@@ -6,6 +6,7 @@ public record ProfileResponse(
         String firstName,
         String lastName,
         String email,
+        boolean promotions,
         AddressResponse address,
         List<PaymentCardResponse> paymentCards
 ) {

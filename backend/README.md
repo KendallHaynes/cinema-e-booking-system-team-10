@@ -178,6 +178,28 @@ Examples:
 
     http://localhost:8080/api/movies/status?status=COMING_SOON
 
+### Create a movie (admin session required)
+
+    POST /api/movies/admin
+
+The JSON body accepts the movie fields; `title`, `genre`, `description`, and a
+valid `status` (`CURRENTLY_RUNNING` or `COMING_SOON`) are required.
+
+### Showrooms, showtimes, and seat availability
+
+    GET /api/showrooms
+    GET /api/showtimes
+    GET /api/showtimes?movieId={movieId}
+    GET /api/showtimes/{showId}/seats
+
+Seat responses identify each seat and whether it is available or already
+booked. Admins can add a future showtime using the signed-in admin session:
+
+    POST /api/showtimes/admin
+
+The request body contains `movieId`, `roomId`, and a future local `dateTime`.
+The API and database reject a duplicate date/time in the same showroom.
+
 ## No-Match Results
 
 When a search or filter does not find any movies, the API returns an empty JSON array:
@@ -257,7 +279,7 @@ The response should contain the movies stored in MySQL.
 
 ## Current Sprint Scope
 
-For Sprint 1 / Deliverable 2, the backend currently supports:
+The backend supports:
 
 - Customer registration with email confirmation
 - Server-side login sessions and logout
@@ -271,11 +293,15 @@ For Sprint 1 / Deliverable 2, the backend currently supports:
 - Individual movie retrieval
 - Movie poster and trailer URLs
 - Currently Running and Coming Soon movie statuses
+- Admin-only movie creation
+- Admin-only future showtime scheduling with showroom conflict validation
+- Showtime and seat-map retrieval for customer browsing and bookings
 
-Showtimes and booking functionality are currently handled as prototype functionality in the frontend.
-
-Full booking, ticket, payment processing, promotions, and administrative functionality will be implemented in later development stages. The admin portal is an authenticated navigation prototype; its menu sections are not functional management tools or protected management APIs.
-
+Customers can select seats, review their order, confirm an email address, and
+continue to the mock payment-processing page. Seats are marked unavailable
+when checkout begins and remain so until manually reset. The page does not
+process payment or finalize a booking. User management is not implemented in
+this sprint.
 ## Customer Registration
 
 Registration is available through:
@@ -313,20 +339,21 @@ must meet the registration password requirements. Reset tokens are stored as
 SHA-256 hashes and deleted after successful use.
 
 After signing in, customers are routed to the movie home page and admins to the
-admin portal prototype. The login creates an HTTP-only server session; logout
-invalidates it, and `/api/admin/session` checks the current database role before
-granting admin portal access. Its menu includes Manage Movies, Promotions,
-Users, and Showtimes. Those menu sections are prototypes, not functional admin
-tools. To prepare an admin demo, first register and verify a normal account,
-then promote that account using a secured database client:
+Admin Portal. The login creates an HTTP-only server session; logout invalidates
+it, and `/api/admin/session` checks the current database role before granting
+admin access. Manage Movies, Showtimes, and Promotions use admin-protected
+backend operations. Promotions require a name, discount percentage, and valid
+date range; the backend emails active customers whose `promotions` preference
+is true. The Users menu remains informational and is not implemented. To
+prepare an admin demo, first register and verify a normal account, then
+promote that account using a secured database client:
 
     UPDATE users
     SET userType = 'ADMIN', customerStatus = NULL, promotions = NULL
     WHERE email = 'admin@example.com';
 
 The admin signs in with the password already set on that account. Do not use
-this manual promotion workflow in production; no admin management APIs or
-business data are implemented yet.
+this manual promotion workflow in production.
 
 ## Profile, cards, and favorites
 
@@ -367,9 +394,9 @@ heart on a movie saves or removes it, and the Favorites filter shows saved
 movies across sessions. Guests may still use the existing browser-local
 favorites.
 
-## Preparing demo accounts
+## Preparing the demo admin account
 
-The optional demo seeder is disabled by default. To prepare the demo accounts
+The optional demo seeder is disabled by default. To prepare the demo admin
 before the presentation, stop the normal backend, then start it once with
 `DEMO_SEED_ENABLED=true` and `DEMO_SEED_PASSWORD` set. On macOS, enter the
 password at a hidden prompt:
@@ -381,19 +408,20 @@ password at a hidden prompt:
     export DEMO_SEED_ENABLED=true
     ./mvnw spring-boot:run
 
-Wait for the `Demo data is ready` message, stop the backend with `Control+C`,
-and clear the temporary environment variables:
+Wait for the `Demo admin account is ready` message, stop the backend with
+`Control+C`, and clear the temporary environment variables:
 
     unset DEMO_SEED_PASSWORD DEMO_SEED_ENABLED
 
-Start the backend normally after seeding. The seeder creates or updates the
-admin `kndllhaynes@gmail.com`, verified favorite user `kch55499@uga.edu`, and
-verified card user `kendallhaynes7730@gmail.com`. It stores a favorite for the
-favorite user and adds fake test cards, encrypted with the configured
-card-encryption key, until the card user has three. Existing addresses and
-saved cards are preserved. Re-running the seeder does not duplicate the
-favorite or exceed the three-card limit. Never use real payment-card numbers
-for this demo.
+Start the backend normally after seeding. The seeder creates or updates only
+the admin `kndllhaynes@gmail.com`; customer accounts must be registered through
+the application. Passwords are stored as BCrypt hashes. The seeder updates the
+admin password each time it runs, so keep it disabled after the one-time setup
+and never enable it on a public or production database. Changing the seeder
+does not delete any demo accounts that may already exist in the database.
+When enabled, the seeder also ensures each catalog movie has three future
+showtimes and corresponding seat maps. It requires the demo showrooms and their
+seat layouts to exist first.
 
 Session cookies are HTTP-only and use `SameSite=Lax`. The Vite development
 server proxies `/api` requests to the backend so the browser uses the same

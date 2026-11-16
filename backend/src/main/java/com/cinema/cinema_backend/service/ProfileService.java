@@ -69,6 +69,7 @@ public class ProfileService {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEmail(),
+                Boolean.TRUE.equals(user.getPromotions()),
                 address == null ? null : com.cinema.cinema_backend.controller.AddressResponse.from(address),
                 cards
         );
@@ -82,6 +83,9 @@ public class ProfileService {
                 || !user.getLastName().equals(request.lastName().trim());
 
         user.updateProfile(request.firstName().trim(), request.lastName().trim());
+        if (request.promotions() != null) {
+            user.updatePromotionPreference(request.promotions());
+        }
         userRepository.save(user);
 
         AddressRequest addressRequest = request.address();

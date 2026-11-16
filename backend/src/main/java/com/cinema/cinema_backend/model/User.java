@@ -122,6 +122,10 @@ public class User {
         this.lastName = lastName;
     }
 
+    public void updatePromotionPreference(boolean promotions) {
+        this.promotions = promotions;
+    }
+
     public boolean canSignIn() {
         return "ADMIN".equals(userType) || "ACTIVE".equals(customerStatus);
     }

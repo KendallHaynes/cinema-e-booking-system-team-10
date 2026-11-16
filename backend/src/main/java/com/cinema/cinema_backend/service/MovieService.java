@@ -1,6 +1,7 @@
 package com.cinema.cinema_backend.service;
 
 import com.cinema.cinema_backend.model.Movie;
+import com.cinema.cinema_backend.controller.CreateMovieRequest;
 import com.cinema.cinema_backend.repository.MovieRepository;
 import org.springframework.stereotype.Service;
 
@@ -33,5 +34,24 @@ public class MovieService {
 
     public Movie getMovieById(Long id) {
         return movieRepository.findById(id).orElse(null);
+    }
+
+    public Movie createMovie(CreateMovieRequest request) {
+        Movie movie = new Movie();
+        movie.setTitle(request.title().trim());
+        movie.setGenre(request.genre().trim());
+        movie.setRating(blankToNull(request.rating()));
+        movie.setDescription(request.description().trim());
+        movie.setPosterUrl(blankToNull(request.posterUrl()));
+        movie.setTrailerUrl(blankToNull(request.trailerUrl()));
+        movie.setStatus(request.status());
+        movie.setDirector(blankToNull(request.director()));
+        movie.setCast(blankToNull(request.cast()));
+        movie.setProducer(blankToNull(request.producer()));
+        return movieRepository.save(movie);
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }
